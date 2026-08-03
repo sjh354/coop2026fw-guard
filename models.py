@@ -46,7 +46,10 @@ AI assistant:
 
 def build_prompt_text(tok, model_name, prompt, response=""):
     if model_name == "llamaguard":
-        chat = [{"role": "user", "content": prompt}]
+        # 이 모델의 chat template은 content가 문자열이면 selectattr('type','equalto','text')에
+        # 걸리지 않아 <BEGIN CONVERSATION> 블록이 통째로 비어버린다 (모든 입력이 'safe'로 나오는
+        # 버그의 원인이었음). content를 text 블록 리스트로 감싸야 한다.
+        chat = [{"role": "user", "content": [{"type": "text", "text": prompt}]}]
     elif model_name == "polyguard":
         chat = [
             {"role": "system", "content": POLYGUARD_SYSTEM_PROMPT},
