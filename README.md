@@ -20,11 +20,11 @@ guard-lab/
 
 ## 진행 상태
 
-- [ ] Phase 0 — conda env(`guard`) 세팅
+- [x] Phase 0 — conda env(`guard`) 세팅
 - [ ] Phase 1 — Llama Guard / PolyGuard 논문 리딩
-- [ ] Phase 2 — 스모크 테스트 (raw 출력 확보)
-- [ ] Phase 3 — PGPrompts 재현 평가 (en → ko)
-- [ ] Phase 4 — FastAPI 서빙
+- [x] Phase 2 — 스모크 테스트 (raw 출력 확보)
+- [x] Phase 3 — PGPrompts 재현 평가 (en → ko)
+- [x] Phase 4 — FastAPI 서빙
 
 ## 빠른 시작
 
@@ -32,10 +32,11 @@ guard-lab/
 conda create -n guard python=3.11 -y && conda activate guard
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
-export HF_HOME=/data/hf
 ```
 
 t2i-lab conda env는 재사용하지 않는다 (diffusers 핀 때문에 transformers 버전 충돌 가능).
+서버(`172.10.5.23`)에 `/data` 마운트가 없어 `HF_HOME`은 지정하지 않고 기본 캐시
+(`~/.cache/huggingface`)를 t2i-lab과 공유해서 쓴다 — 자세한 내용은 `docs/PLAN.md` Phase 0 참고.
 
 ## 참고 논문
 
