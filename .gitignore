@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# conda / venv
+.venv/
+venv/
+
+# HF cache / model weights (재다운로드 가능, 용량 큼)
+hf_cache/
+*.safetensors
+*.bin
+*.gguf
+
+# 평가 결과는 CSV라 가볍지만 대용량 raw dump는 무시
+results/*.jsonl
+results/*.log
+
+# OS / editor
+.DS_Store
+.vscode/
