@@ -27,8 +27,11 @@ Llama Guard 3 로드가 깨질 수 있다.
 conda create -n guard python=3.11 -y && conda activate guard
 pip install torch --index-url https://download.pytorch.org/whl/cu121
 pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
-export HF_HOME=/data/hf
 ```
+
+서버에 `/data` 마운트가 없어서 `HF_HOME`은 따로 지정하지 않는다 — t2i-lab과 동일하게 기본 캐시
+(`~/.cache/huggingface`)를 공유해서 쓴다. 여유 공간(당시 30GB)으로 이번 실습 모델(Llama Guard
+3-1B, PolyGuard-Qwen-Smol)은 충분.
 
 → verify: `python -c "import torch; print(torch.cuda.get_device_properties(0).total_memory/1e9)"`
 
