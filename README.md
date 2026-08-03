@@ -14,17 +14,22 @@ guard-lab/
 ├── eval.py        # PGPrompts 서브셋 평가 → CSV
 ├── app.py         # FastAPI 서빙
 ├── docs/
-│   └── PLAN.md    # Phase 0~4 전체 계획
+│   └── PLAN.md    # Phase 0~5 전체 계획
 └── results/       # {model}_{lang}.csv 평가 결과
 ```
 
 ## 진행 상태
 
 - [x] Phase 0 — conda env(`guard`) 세팅
-- [ ] Phase 1 — Llama Guard / PolyGuard 논문 리딩
-- [x] Phase 2 — 스모크 테스트 (raw 출력 확보)
-- [x] Phase 3 — PGPrompts 재현 평가 (en → ko)
-- [x] Phase 4 — FastAPI 서빙
+- [ ] Phase 1 — Llama Guard / PolyGuard 논문 리딩 (Phase 5-1순위의 blocker, 진행 중)
+- [x] Phase 2 — 스모크 테스트 (raw 출력 확보) — LG3-1B chat template 버그(문자열 content 시
+      전부 "safe") 발견/수정, S14 미지원 확인
+- [x] Phase 3 — PGPrompts 재현 평가 en/ko 300샘플 (PolyGuard en 0.9711 / ko 0.9424,
+      LG3-1B en 0.8993 / ko 0.6862, parse 실패율 0%) — 파이프라인 자체는 닫혔고 표본 확대·
+      혼동행렬 분해가 남음, 아래 Phase 5 참고
+- [x] Phase 4 — FastAPI 서빙 (`/moderate`, 동시 5개 요청/OOM 없음 확인)
+- [ ] Phase 5 — 재현 심화 (전체 표본 + 혼동행렬 → ko 실패 모드 분해 → adversarial 슬라이스).
+      상세 우선순위는 `docs/PLAN.md` Phase 5 참고
 
 ## 빠른 시작
 
