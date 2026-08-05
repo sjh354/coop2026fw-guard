@@ -31,10 +31,17 @@ guard-lab/
       혼동행렬 분해가 남음, 아래 Phase 5 참고
 - [x] Phase 4 — FastAPI 서빙 (`/moderate`, 동시 5개 요청/OOM 없음 확인)
 - [x] Phase 5 — 한국어 변형 스위트 구축 (원문/우회표기/띄어쓰기/번역투/code-switching, flip rate) —
-      `data/ko_probe.csv` 150행(base 30×5) 완성, PolyGuard/LG3-1B 예측 완료 (parse 실패 0%).
-      PolyGuard flip rate: 우회표기 23.3% / 띄어쓰기 10.0% / 번역투 26.7% / code-switching 13.3%.
-      LG3-1B flip rate: 우회표기 6.7% / 띄어쓰기 6.7% / 번역투 10.0% / code-switching 10.0%.
-      두 모델 다 번역투에서 가장 흔들림. SGuard-v1은 아직 `models.py`에 미통합 (Phase 1 blocker)
+      `data/ko_probe.csv` 150행(base 30×5) 완성, 3모델(PolyGuard/LG3-1B/SGuard-v1) 예측 완료
+      (parse 실패 전부 0%). SGuard-v1은 `models.py`에 통합(logit 기반 5카테고리 파서).
+
+      | variant_type | PolyGuard | LG3-1B | SGuard-v1 |
+      |---|---|---|---|
+      | 우회표기 | 23.3% | 6.7% | 20.0% |
+      | 띄어쓰기 | 10.0% | 6.7% | 3.3% |
+      | 번역투 | 26.7% | 10.0% | 23.3% |
+      | code-switching | 13.3% | 10.0% | 16.7% |
+
+      세 모델 다 번역투에서 가장 흔들리고, LG3-1B가 전 variant에서 가장 안정적
 - [ ] Phase 6 — 실패 사례 분석 (PGPrompts 전량 혼동행렬 + Phase 5 flip 케이스 → 오탐/미탐 정리)
 - [ ] Phase 7 — Demo 스키마 구현 (`risk → category → confidence → reason`, `/moderate` 응답 확장)
 

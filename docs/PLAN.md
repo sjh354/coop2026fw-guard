@@ -213,7 +213,7 @@ variant 5종 × 30 = 150 rows
 오탐 — F1보다 발표 요구에 정확히 맞는다.
 
 → verify: 3모델 × 150행 예측 CSV, variant_type별 flip rate 표 (`results/ko_probe_{model}.csv`) —
-  **PolyGuard·LG3-1B 완료(2026-08-05), SGuard-v1은 Phase 1(모델 통합) 완료 후 추가 실행 필요**
+  **완료(2026-08-05), 3모델 전부**
 
 ### Phase 6 — 실패 사례 분석 (반나절)
 
