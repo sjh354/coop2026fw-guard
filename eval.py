@@ -91,6 +91,7 @@ def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
                     "true_label": batch["prompt_harm_label"][i],
                     "pred_label": pred,
                     "raw_output": raw,
+                    "adversarial": batch["adversarial"][i],
                 }
             )
         print(f"{model_name}/{lang}: {min(start + batch_size, len(ds))}/{len(ds)}")
