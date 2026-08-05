@@ -8,11 +8,12 @@ import torch
 from datasets import load_dataset
 from sklearn.metrics import f1_score
 
-from models import build_prompt_text, load, parse_prompt_harm
+from models import build_prompt_text, generate_batch, load
 
 MODEL_IDS = {
     "llamaguard": "meta-llama/Llama-Guard-3-1B",
     "polyguard": "ToxicityPrompts/PolyGuard-Qwen-Smol",
+    "sguard": "SamsungSDS-Research/SGuard-ContentFilter-2B-v1",
 }
 LANG_NAMES = {"en": "English", "ko": "Korean"}
 
@@ -29,15 +30,9 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
     for start in range(0, len(df_in), batch_size):
         batch = df_in.iloc[start : start + batch_size]
         texts = [build_prompt_text(tok, model_name, p) for p in batch["text"]]
-        inputs = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to("cuda")
-        with torch.no_grad():
-            out = model.generate(
-                **inputs, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tok.pad_token_id
-            )
-        gen = out[:, inputs["input_ids"].shape[-1] :]
-        raw_outputs = tok.batch_decode(gen, skip_special_tokens=True)
+        pred_labels, raw_outputs = generate_batch(model_name, tok, model, texts, max_new_tokens)
 
-        for (_, r), raw in zip(batch.iterrows(), raw_outputs):
+        for (_, r), pred, raw in zip(batch.iterrows(), pred_labels, raw_outputs):
             rows.append(
                 {
                     "id": r["id"],
@@ -45,7 +40,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
                     "variant_type": r["variant_type"],
                     "text": r["text"],
                     "true_label": r["label"],
-                    "pred_label": parse_prompt_harm(model_name, raw),
+                    "pred_label": pred,
                     "raw_output": raw,
                 }
             )
@@ -86,16 +81,9 @@ def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
     for start in range(0, len(ds), batch_size):
         batch = ds[start : start + batch_size]
         texts = [build_prompt_text(tok, model_name, p) for p in batch["prompt"]]
-        inputs = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to("cuda")
-        with torch.no_grad():
-            out = model.generate(
-                **inputs, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tok.pad_token_id
-            )
-        gen = out[:, inputs["input_ids"].shape[-1] :]
-        raw_outputs = tok.batch_decode(gen, skip_special_tokens=True)
+        pred_labels, raw_outputs = generate_batch(model_name, tok, model, texts, max_new_tokens)
 
-        for i, raw in enumerate(raw_outputs):
-            pred = parse_prompt_harm(model_name, raw)
+        for i, (pred, raw) in enumerate(zip(pred_labels, raw_outputs)):
             rows.append(
                 {
                     "id": batch["id"][i],
