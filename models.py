@@ -87,6 +87,129 @@ def parse_prompt_harm(model_name, raw_output):
         raise ValueError(f"unknown model_name: {model_name}")
 
 
+# Phase 7 demo 스키마(risk/category/confidence/reason)용 카테고리 → 한국어 사유 템플릿.
+# 실제 모델이 생성한 설명이 아니라 카테고리 코드에 고정 매핑한 문장이다 — 데모/발표에서
+# "reason은 모델 근거가 아니라 템플릿"이라는 점을 반드시 같이 밝힐 것 (PLAN.md Phase 7 참고).
+# llamaguard/polyguard 둘 다 같은 S1-S14 체계를 쓰므로 공유한다.
+S_CODE_CATEGORY_REASON = {
+    "S1": "폭력 범죄(Violent Crimes)에 해당하는 내용이 포함되어 있습니다.",
+    "S2": "비폭력 범죄(Non-Violent Crimes)에 해당하는 내용이 포함되어 있습니다.",
+    "S3": "성범죄(Sex Crimes)에 해당하는 내용이 포함되어 있습니다.",
+    "S4": "아동 착취(Child Exploitation)에 해당하는 내용이 포함되어 있습니다.",
+    "S5": "명예훼손(Defamation)에 해당하는 내용이 포함되어 있습니다.",
+    "S6": "전문 분야(의료/법률/재정 등) 조언 오남용(Specialized Advice)에 해당하는 내용이 포함되어 있습니다.",
+    "S7": "개인정보 침해(Privacy)에 해당하는 내용이 포함되어 있습니다.",
+    "S8": "지식재산권 침해(Intellectual Property)에 해당하는 내용이 포함되어 있습니다.",
+    "S9": "무차별 무기(Indiscriminate Weapons)에 해당하는 내용이 포함되어 있습니다.",
+    "S10": "혐오 표현(Hate)에 해당하는 내용이 포함되어 있습니다.",
+    "S11": "자해(Self-Harm)에 해당하는 내용이 포함되어 있습니다.",
+    "S12": "성적인 콘텐츠(Sexual Content)에 해당하는 내용이 포함되어 있습니다.",
+    "S13": "선거 관련 허위정보(Elections)에 해당하는 내용이 포함되어 있습니다.",
+    "S14": "코드 인터프리터 악용(Code Interpreter Abuse)에 해당하는 내용이 포함되어 있습니다.",
+}
+SGUARD_CATEGORY_REASON = {
+    "Crime": "불법·범죄 활동(Crime)에 해당하는 내용이 포함되어 있습니다.",
+    "Manipulation": "조작·명예훼손 등 사회적 위해(Manipulation)에 해당하는 내용이 포함되어 있습니다.",
+    "Privacy": "개인정보 또는 전문 조언 오남용(Privacy)에 해당하는 내용이 포함되어 있습니다.",
+    "Sexual": "성적인 콘텐츠(Sexual)에 해당하는 내용이 포함되어 있습니다.",
+    "Violence": "폭력 또는 혐오 표현(Violence)에 해당하는 내용이 포함되어 있습니다.",
+}
+SAFE_REASON = "특별한 위험 요소가 발견되지 않았습니다."
+UNKNOWN_CATEGORY_REASON = "세부 카테고리를 특정할 수 없는 위험 요소가 발견되었습니다."
+
+
+def parse_categories(model_name, raw_output):
+    """risk가 unsafe일 때 위반 카테고리 코드 목록. safe면 보통 빈 리스트."""
+    if model_name == "llamaguard":
+        return re.findall(r"S\d{1,2}", raw_output)
+    elif model_name == "polyguard":
+        m = re.search(r"Request safety violations:\s*([^\n]*)", raw_output)
+        return re.findall(r"S\d{1,2}", m.group(1)) if m else []
+    else:
+        raise ValueError(f"unknown model_name: {model_name}")
+
+
+def moderate(model_name, tok, model, prompt, response=""):
+    """단일 prompt에 대해 risk/category/confidence/reason 4필드 dict 반환 (Phase 7 demo 스키마).
+    confidence는 safe/unsafe(혹은 yes/no) 결정 토큰 위치의 logit을 두 후보로만 softmax한 값."""
+    text = build_prompt_text(tok, model_name, prompt, response)
+    inputs = tok(text, return_tensors="pt", add_special_tokens=False).to(model.device)
+
+    if model_name == "sguard":
+        category_ids = sguard_category_ids(tok)
+        with torch.no_grad():
+            out = model.generate(
+                **inputs,
+                max_new_tokens=5,
+                do_sample=False,
+                pad_token_id=tok.pad_token_id,
+                return_dict_in_generate=True,
+                output_logits=True,
+            )
+        cat_status, cat_conf = {}, {}
+        for i, (safe_id, unsafe_id) in enumerate(category_ids):
+            probs = torch.softmax(out.logits[i][0][[safe_id, unsafe_id]], dim=0)
+            name = SGUARD_CATEGORY_NAMES[i]
+            cat_status[name] = "unsafe" if probs[1] >= 0.5 else "safe"
+            cat_conf[name] = probs.max().item()
+        triggered = [k for k, v in cat_status.items() if v == "unsafe"]
+        risk = "unsafe" if triggered else "safe"
+        confidence = max(cat_conf[k] for k in triggered) if triggered else min(cat_conf.values())
+        reason = " ".join(SGUARD_CATEGORY_REASON[k] for k in triggered) if triggered else SAFE_REASON
+        return {"risk": risk, "category": triggered, "confidence": round(confidence, 4), "reason": reason}
+
+    if model_name == "llamaguard":
+        label_ids = {
+            tok.encode("safe", add_special_tokens=False)[-1]: "safe",
+            tok.encode("unsafe", add_special_tokens=False)[-1]: "unsafe",
+        }
+        max_new_tokens = 64
+    elif model_name == "polyguard":
+        label_ids = {
+            tok.encode(" no", add_special_tokens=False)[-1]: "safe",
+            tok.encode(" yes", add_special_tokens=False)[-1]: "unsafe",
+        }
+        max_new_tokens = 100
+    else:
+        raise ValueError(f"unknown model_name: {model_name}")
+
+    with torch.no_grad():
+        out = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=tok.pad_token_id,
+            return_dict_in_generate=True,
+            output_scores=True,
+        )
+    gen_ids = out.sequences[0][inputs["input_ids"].shape[-1] :].tolist()
+    raw = tok.decode(gen_ids, skip_special_tokens=True)
+
+    confidence = None
+    for step, tid in enumerate(gen_ids):
+        if tid in label_ids:
+            candidate_ids = list(label_ids.keys())
+            probs = torch.softmax(out.scores[step][0][candidate_ids], dim=0)
+            confidence = probs[candidate_ids.index(tid)].item()
+            break
+
+    harm = parse_prompt_harm(model_name, raw)
+    risk = "unsafe" if harm == "harmful" else "safe" if harm == "unharmful" else None
+    categories = parse_categories(model_name, raw) if risk == "unsafe" else []
+    if risk == "safe":
+        reason = SAFE_REASON
+    elif categories:
+        reason = " ".join(S_CODE_CATEGORY_REASON.get(c, UNKNOWN_CATEGORY_REASON) for c in categories)
+    else:
+        reason = UNKNOWN_CATEGORY_REASON
+    return {
+        "risk": risk,
+        "category": categories,
+        "confidence": round(confidence, 4) if confidence is not None else None,
+        "reason": reason,
+    }
+
+
 def sguard_category_ids(tok):
     """[safe_id, unsafe_id] 쌍 5개, SGUARD_CATEGORY_NAMES와 같은 순서. 모델 카드 방식 그대로."""
     special_ids = list(tok.added_tokens_decoder.keys())[-10:]

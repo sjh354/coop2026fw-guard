@@ -4,15 +4,16 @@
 import threading
 from contextlib import asynccontextmanager
 
-import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-from models import build_prompt_text, load, parse_prompt_harm
+from models import load
+from models import moderate as run_moderation
 
 MODEL_IDS = {
     "polyguard": "ToxicityPrompts/PolyGuard-Qwen-Smol",
     "llamaguard": "meta-llama/Llama-Guard-3-1B",
+    "sguard": "SamsungSDS-Research/SGuard-ContentFilter-2B-v1",
 }
 
 MODELS = {}
@@ -45,17 +46,15 @@ def moderate(req: Req):
         raise HTTPException(status_code=400, detail=f"unknown model: {req.model} (choices: {list(MODEL_IDS)})")
 
     tok, model = MODELS[req.model]
-    text = build_prompt_text(tok, req.model, req.prompt, req.response)
-    inputs = tok(text, return_tensors="pt", add_special_tokens=False).to("cuda")
 
     # async def로 두면 GPU 추론이 이벤트 루프를 블로킹한다. 동기 def + Lock으로
     # FastAPI가 스레드풀로 빼고, GPU 접근만 직렬화한다.
     with lock:
-        with torch.no_grad():
-            out = model.generate(
-                **inputs, max_new_tokens=100, do_sample=False, pad_token_id=tok.pad_token_id
-            )
-    raw = tok.decode(out[0][inputs["input_ids"].shape[-1] :], skip_special_tokens=True)
-    harmful = parse_prompt_harm(req.model, raw) == "harmful"
+        result = run_moderation(req.model, tok, model, req.prompt, req.response)
 
-    return {"model": req.model, "prompt_harmful": harmful, "raw_output": raw}
+    return {
+        "model": req.model,
+        **result,
+        # reason은 모델이 생성한 근거가 아니라 카테고리 코드 → 고정 문장 매핑이다 (PLAN.md Phase 7).
+        "reason_source": "category_template",
+    }
