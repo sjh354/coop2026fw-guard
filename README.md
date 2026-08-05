@@ -28,8 +28,12 @@ guard-lab/
       LG3-1B en 0.8993 / ko 0.6862, parse 실패율 0%) — 파이프라인 자체는 닫혔고 표본 확대·
       혼동행렬 분해가 남음, 아래 Phase 5 참고
 - [x] Phase 4 — FastAPI 서빙 (`/moderate`, 동시 5개 요청/OOM 없음 확인)
-- [ ] Phase 5 — 재현 심화 (전체 표본 + 혼동행렬 → ko 실패 모드 분해 → adversarial 슬라이스).
-      상세 우선순위는 `docs/PLAN.md` Phase 5 참고
+- [ ] Phase 5 — 한국어 변형 스위트 구축 (원문/우회표기/띄어쓰기/번역투/code-switching, flip rate)
+- [ ] Phase 6 — 실패 사례 분석 (PGPrompts 전량 혼동행렬 + Phase 5 flip 케이스 → 오탐/미탐 정리)
+- [ ] Phase 7 — Demo 스키마 구현 (`risk → category → confidence → reason`, `/moderate` 응답 확장)
+
+Phase 5~7은 정량 재현이 아니라 정성 분석 축이다. 세 번째 비교 모델로 SGuard-v1(한국어 특화,
+confidence 네이티브 제공) 추가 예정 — 상세 계획은 `docs/PLAN.md` Phase 5~7 참고.
 
 ## 빠른 시작
 
@@ -47,3 +51,4 @@ t2i-lab conda env는 재사용하지 않는다 (diffusers 핀 때문에 transfor
 
 `../papers/`에 이미 받아둔 관련 PDF: `polyguard.pdf`, `limaguard.pdf`, `mrguard.pdf`,
 `sealguard.pdf`, `sguard.pdf`. Llama Guard(2312.06674) 원문은 아직 없으면 받아서 추가할 것.
+`sguard.pdf`는 Phase 5~7에서 세 번째 비교 모델(SGuard-v1)로 실제 사용 예정.

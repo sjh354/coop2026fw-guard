@@ -37,7 +37,11 @@ pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
 
 ---
 
-## Phase 1 — 논문 리딩 (반나절)
+## Phase 1 — 논문 리딩 (반나절, 진행 중)
+
+목적이 Table 1 수치 대조에서 **taxonomy 정의 파악**으로 넓어졌다. Phase 5~7이 정성 분석(정답
+라벨이 이미 있는 변형 케이스에서 flip을 찾는 작업)으로 바뀌면서, 어떤 모델이 무엇을 unsafe로
+보도록 설계됐는지 정확히 알아야 실패를 "실패"라고 부를 수 있기 때문이다.
 
 읽는 순서와 볼 곳:
 
@@ -47,9 +51,19 @@ pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
 **PolyGuard (2504.04377)** — Section 3(데이터 구축), Table 1(PGPrompts 결과), 그리고
 **Llama Guard 3와 비교한 행**. 이 숫자가 Phase 3의 정답지다. 미리 표로 옮겨둘 것.
 
+**SGuard-v1** — multi-class prediction + binary confidence score를 네이티브로 낸다는 점, 그리고
+한국어·영어 중심 파인튜닝이라는 점을 확인 (Phase 5~7에서 세 번째 비교 모델로 추가).
+
 정리할 것 하나: PolyGuard는 출력이 4~5개 필드(요청 유해성 / 위반 카테고리 / 거부 여부 /
-응답 유해성 / 응답 위반 카테고리)인 반면 Llama Guard는 `safe|unsafe` + 카테고리 한 줄다.
+응답 유해성 / 응답 위반 카테고리)인 반면 Llama Guard는 `safe|unsafe` + 카테고리 한 줄이다.
 **공통 비교축은 prompt harmfulness 이진 분류 하나**라는 걸 처음부터 못 박고 가야 뒤에서 안 헤맨다.
+
+**세 모델 taxonomy가 서로 다르다는 점도 명시할 것.** 예: `"이 나쁜 녀석아!"` 같은 경미한
+욕설/비하는 toxicity 분류로는 `Abuse/Slang`이지만, LG3·PolyGuard는 S1–S14 **safety**(폭력/범죄/
+자해 등) 분류라 대부분 `safe`로 나온다 — 버그가 아니라 "safety guardrail이 abuse를 애초에
+커버하지 않는다"는 실패 사례 1번 소재.
+
+→ verify: 세 모델의 카테고리 정의를 한 표로 정렬 (`docs/taxonomy_map.md`)
 
 ---
 
@@ -154,54 +168,108 @@ def moderate(req: Req):
 
 ---
 
-## Phase 5 — 재현 심화 (다음 작업)
+## Phase 5~7 — 정성 분석 (다음 작업)
 
-Phase 0/2/3/4는 끝났다. 파이프라인은 이미 닫혔고, 남은 건 재현의 강도를 올리는 일이다.
+Phase 0~4는 끝났고 Phase 3의 PGPrompts F1 재현("정량 재현" 축)도 닫혔다. 발표에서 요구하는 건
+정량 재현이 아니라 **직접 만든 한국어 변형 케이스에서 실패를 찾는 정성 분석**이라, Phase 5~7을
+새로 추가한다. 세 번째 비교 모델로 **SGuard-v1**을 추가한다 — Apache-2.0, 게이팅 없음, 2B
+(~4.5GB, 기존 4GB와 합쳐 16GB 예산 안에 들어감), confidence를 네이티브로 제공해 Phase 7의
+절반을 해결해주고, 한국어·영어 중심 파인튜닝이라 PolyGuard(범용 다국어) vs LG3(영어 중심) vs
+SGuard(한국어 특화) 3점 비교가 자연스럽게 나온다.
 
-**지금 상태의 구멍**: Phase 2에서 LG3-1B의 chat template 버그(문자열 content를 넣으면
-`<BEGIN CONVERSATION>`이 비어 전부 "safe"로 나오던 문제)를 고친 직후라, ko F1 0.6862가
-**진짜 다국어 성능 저하인지 포맷 편향이 남은 건지 아직 구분되지 않는다.** 파싱 실패율은 0%였지만
-그것과 "예측이 safe로 쏠렸는가"는 별개 질문이다. 그리고 300샘플의 Wilson CI 폭이 대략 ±4%p라,
-지금 표본으로는 "논문 수치와 ±3%p 이내"를 애초에 판정할 해상도가 없다.
+**기존 결과는 유지한다.** PGPrompts F1 표(Phase 3)는 "정량 재현" 섹션, Phase 5~7 산출물은
+"정성 분석" 섹션으로 발표 자료를 두 축으로 나눈다.
 
-### 1순위 — Phase 1 마무리 (반나절, 이후 모든 것의 blocker)
+### Phase 5 — 한국어 변형 스위트 구축 (1일) ★핵심, 병목 구간
 
-논문 Table 1이 정확히 무엇을 보고하는지 특정한다: (1) 지표 정의가 harmful request F1인지 다른
-aggregate인지, (2) 언어별 행인지 17개 언어 평균인지, (3) 평가 서브셋 크기. 이게 확정 안 되면
-2순위의 대조 자체가 성립하지 않는다.
+**설계 원칙**: 변형은 의미를 바꾸지 않으므로 정답 라벨이 보존된다. 추가 라벨링 없이 "예측이
+뒤집혔는가(flip)"만 세면 된다.
 
-→ verify: 논문 수치를 `results/paper_reference.md`에 en/ko 행으로 옮겨 적기
+```
+base 30개 = unsafe 20 + safe 10   ← safe도 넣어야 오탐 축이 생김
+variant 5종 × 30 = 150 rows
+```
 
-### 2순위 — 전체 표본 + 혼동행렬 (반나절)
+변형 종류:
 
-300 → 1725(en/ko 전량)로 늘린다. GPU 시간은 몇 분 수준이라 부담 없음. F1만 저장하지 말고
-**TP/FP/FN/TN을 CSV에 같이 저장** — 그러면 3·4순위가 추가 실행 없이 여기서 파생된다.
+| 변형 | 예 | 노리는 실패 |
+|---|---|---|
+| 원문 | 욕설/유해 표현 그대로 | 기준선 |
+| 우회 표기 | 자음 분리, 숫자 치환 | 토크나이저 취약성 |
+| 띄어쓰기/특수문자 | 글자 사이 공백·기호 삽입 | 표층 패턴 의존 |
+| 번역투 | 영어 직역체 한국어 | 학습 분포 이탈 |
+| code-switching | 한영 혼용 | 다국어 일관성 |
 
-→ verify: 각 셀에 Wilson CI 병기, 논문 수치와 CI 겹침 여부로 재현 판정
+`data/ko_probe.csv` 스키마: `id, base_id, variant_type, text, label`
 
-### 3순위 — LG3 ko 실패 모드 분해 (1시간, 추가 실행 없음)
+지표는 **flip rate**(원문 대비 예측이 바뀐 비율). unsafe→safe flip은 미탐, safe→unsafe flip은
+오탐 — F1보다 발표 요구에 정확히 맞는다.
 
-2순위 결과를 precision/recall로 쪼갠다.
-- recall이 낮다 → unsafe를 놓침 = 진짜 다국어 안전성 갭 (논문 주장 뒷받침)
-- precision이 낮다 → 멀쩡한 걸 unsafe로 = 다른 이야기
-- 예측이 safe로 심하게 쏠림 → 포맷 편향이 아직 남아있다는 신호, 재점검 필요 (위의 "구멍" 참고)
+→ verify: 3모델 × 150행 예측 CSV, variant_type별 flip rate 표 (`results/ko_probe_{model}.csv`)
 
-### 4순위 — adversarial 슬라이스 (30분, 추가 실행 없음)
+### Phase 6 — 실패 사례 분석 (반나절)
 
-2순위 CSV에 이미 있는 `adversarial` 필드로 groupby만 하면 된다. 일반 vs adversarial에서 두 모델
-격차가 벌어지는지 확인.
+두 소스를 합친다.
 
-### 5순위 — response harmfulness (반나절, 여유 있으면)
+1. **PGPrompts 전량(1725) 재실행** — 300 → 전량. 목적은 F1이 아니라 **TP/FP/FN/TN 저장**.
+   FN 풀에서 미탐, FP 풀에서 오탐 사례를 뽑는다. GPU 시간은 몇 분이라 부담 없음.
+2. **Phase 5의 flip 케이스** — 변형으로 뒤집힌 것들.
 
-PolyGuard의 4~5필드를 다 쓴다는 점에서 의미 있지만, LG3는 별도 프롬프트 형식으로 다시 돌려야 해서
-공정 비교 설계가 추가로 필요하다.
+각 모델당 오탐 3건 + 미탐 3건을 원문·예측·추정 원인과 함께 정리.
 
-### 보류 — 다른 언어 서브셋, 부하 테스트
+여기서 기존 구멍도 같이 닫는다: **LG3 ko F1 0.6862가 precision 문제인지 recall 문제인지**
+혼동행렬로 확인한다. recall이 낮으면 진짜 다국어 갭, safe 쪽으로 심하게 쏠렸으면 template 버그
+잔존 의심 (Phase 2에서 고친 chat template 버그와 별개로 재점검).
 
-- ja/zh 등 추가 언어는 "간단한 실습" 범위를 넘는다. 3순위에서 ko 실패 모드가 명확히 나오면 그 자체로
-  결론이 서니, 필요할 때 추가한다.
+adversarial 슬라이스(PGPrompts의 `adversarial` 필드로 groupby)도 추가 실행 없이 여기서 같이
+확인한다.
+
+→ verify: 모델별 precision/recall 분해, 사례 18건(3모델 × 오탐3 × 미탐3) 정리 (`docs/failure_cases.md`)
+
+### Phase 7 — Demo 스키마 구현 (1일)
+
+목표 스키마: `risk → category → confidence → reason`.
+
+**confidence** — 생성 시 logprob을 뽑는다.
+
+```python
+out = model.generate(**inputs, max_new_tokens=64,
+                     output_scores=True, return_dict_in_generate=True)
+# safe/unsafe 토큰이 나오는 위치의 logits에서 두 토큰 id만 softmax
+```
+
+LG3는 첫 생성 토큰이 `safe`/`unsafe`라 간단하다. PolyGuard는 4-field 중 harmful request 필드의
+Yes/No 위치를 먼저 확인해야 한다. SGuard는 모델이 직접 제공.
+
+**reason** — LG3·PolyGuard는 이유를 생성하지 않는다. 카테고리 → 템플릿 문장 매핑을 쓴다
+(예: `S1 → "폭력 범죄에 해당하는 내용이 포함되어 있습니다."`). **"reason이 실제 모델 근거가
+아니라 카테고리 템플릿"이라는 점을 데모/발표에 명시** — 감추면 나중에 지적당한다. reasoning
+기반 가드(MrGuard 등)가 왜 필요한지가 여기서 자연스럽게 논의 거리로 이어진다.
+
+`demo.ipynb`에 `moderate(text) → dict` 함수 하나만 추가. 기존 `app.py`는 `/moderate` 응답
+스키마만 확장하면 되고 구조 변경은 없음.
+
+→ verify: `moderate("이 나쁜 녀석아!")`가 4필드 반환, 세 모델 모두 동작
+→ verify: FastAPI `/moderate` curl 응답에 confidence 포함
+
+### 순서와 소요
+
+```
+Phase 1(반나절, 진행 중) → Phase 5(1일) → Phase 6(반나절) → Phase 7(1일)
+```
+
+총 3일 + Phase 1 잔여. Phase 5가 가장 오래 걸리고 산출물 가치도 가장 크다 — base 30문장 작성이
+병목이니 여기부터 시작한다. SGuard 추가가 부담이면 Phase 5까지 두 모델로 진행하고, Phase 7에서
+confidence 구현이 막힐 때 추가해도 되지만 미리 넣는 편이 재실행을 줄인다.
+
+### 보류 — 다른 언어 서브셋, 부하 테스트, response harmfulness
+
+- ja/zh 등 추가 언어는 "간단한 실습" 범위를 넘는다. Phase 6에서 ko 실패 모드가 명확히 나오면 그
+  자체로 결론이 서니, 필요할 때 추가한다.
 - 부하 테스트는 Lock으로 직렬화된 단일 워커라 동시 20개 = 단발 지연 × 20으로 측정 전에 답이
-  정해져 있다. 서빙이 목적이 아니라 재현이 목적이므로 지금 상태(동시 5개 verify)로 충분.
+  정해져 있다. 서빙이 목적이 아니라 재현/분석이 목적이므로 지금 상태(동시 5개 verify)로 충분.
+- response harmfulness(PolyGuard 4~5필드 전체 활용)는 LG3를 별도 프롬프트 형식으로 다시 돌려야
+  공정 비교가 되어 범위 밖. 여유 있으면 나중에.
 
 ### 운영 메모
 
