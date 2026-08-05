@@ -232,7 +232,12 @@ variant 5종 × 30 = 150 rows
 adversarial 슬라이스(PGPrompts의 `adversarial` 필드로 groupby)도 추가 실행 없이 여기서 같이
 확인한다.
 
-→ verify: 모델별 precision/recall 분해, 사례 18건(3모델 × 오탐3 × 미탐3) 정리 (`docs/failure_cases.md`)
+→ verify: 모델별 precision/recall 분해, 사례 18건(3모델 × 오탐3 × 미탐3) 정리 (`docs/failure_cases.md`) —
+  **완료(2026-08-06)**. 실제로는 PGPrompts en/ko 각 1725개 중 라벨 있는 1699개로 재실행(전량과
+  거의 동일). LG3 ko F1 0.5693 저하는 recall 문제(0.4523)로 확정, precision(0.7680)은 en과
+  큰 차이 없음 — 다국어 recall 갭이 진짜 원인. adversarial 슬라이스는 세 모델 다 recall 하락,
+  LG3 ko가 낙폭 최대(-0.194p). SGuard FN 사례(반문형 혐오 표현 미탐)는 taxonomy_map.md 기준
+  대응 카테고리(Violence)가 존재하는데도 놓친 것 — 카테고리 부재가 아니라 모델 성능 갭으로 정정.
 
 ### Phase 7 — Demo 스키마 구현 (1일)
 
