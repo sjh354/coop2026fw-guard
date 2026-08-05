@@ -14,7 +14,7 @@ guard-lab/
 ├── eval.py        # PGPrompts 서브셋 평가 → CSV
 ├── app.py         # FastAPI 서빙
 ├── docs/
-│   └── PLAN.md    # Phase 0~5 전체 계획
+│   └── PLAN.md    # Phase 0~7 전체 계획
 └── results/       # {model}_{lang}.csv 평가 결과
 ```
 
@@ -47,7 +47,11 @@ guard-lab/
       recall(0.4523) 문제**로 확정(진짜 다국어 갭, template 버그 잔존 아님), adversarial 슬라이스
       낙폭은 LG3 ko가 최대(recall -0.194p), 세 모델 공통으로 허구/공인 인물+개인정보 키워드
       조합과 반문형 혐오 표현에 취약, 오탐/미탐 18건 원인 추정 정리
-- [ ] Phase 7 — Demo 스키마 구현 (`risk → category → confidence → reason`, `/moderate` 응답 확장)
+- [x] Phase 7 — Demo 스키마 구현 (`risk → category → confidence → reason`, `models.py`의
+      `moderate()` 함수 + `/moderate` 응답 확장). `app.py`에 SGuard 추가로 3모델 동시 서빙
+      (VRAM 8.9GB/24GB), 동시 요청 5개 OOM 없음 확인. confidence는 결정 토큰 2개 후보 softmax
+      (LG3/PolyGuard) 또는 SGuard 네이티브 5카테고리 확률. reason은 카테고리→한국어 템플릿
+      매핑이며 응답에 `reason_source: "category_template"`로 명시(모델 실제 근거 아님)
 
 Phase 5~7은 정량 재현이 아니라 정성 분석 축이다. 세 번째 비교 모델로 SGuard-v1(한국어 특화,
 confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md` Phase 5~7, 실패 사례는

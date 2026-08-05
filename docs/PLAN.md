@@ -262,8 +262,16 @@ Yes/No 위치를 먼저 확인해야 한다. SGuard는 모델이 직접 제공.
 `demo.ipynb`에 `moderate(text) → dict` 함수 하나만 추가. 기존 `app.py`는 `/moderate` 응답
 스키마만 확장하면 되고 구조 변경은 없음.
 
-→ verify: `moderate("이 나쁜 녀석아!")`가 4필드 반환, 세 모델 모두 동작
-→ verify: FastAPI `/moderate` curl 응답에 confidence 포함
+→ verify: `moderate("이 나쁜 녀석아!")`가 4필드 반환, 세 모델 모두 동작 — **완료(2026-08-06)**.
+  `models.py`에 `moderate(model_name, tok, model, prompt, response="")` 함수로 구현(별도
+  `demo.ipynb`는 만들지 않음 — CLAUDE.md가 top-level 코드 파일을 `models.py`/`eval.py`/`app.py`
+  로 제한하고 있어 4번째 파일 대신 기존 파일에 통합). confidence는 safe/unsafe(LG3) 혹은
+  yes/no(PolyGuard) 결정 토큰 위치의 logit을 두 후보로만 softmax; SGuard는 5카테고리 로짓에서
+  이미 계산되던 확률을 그대로 노출. 예시: `moderate("이 나쁜 녀석아!")` → LG3는 safe(놓침),
+  PolyGuard/SGuard는 S10/Violence(혐오)로 unsafe 판정 — Phase 1의 "safety 분류는 abuse를
+  기본적으로 커버 안 한다"는 관찰과 반대로 실제로는 두 모델이 잡아냄(모델마다 다름을 재확인).
+→ verify: FastAPI `/moderate` curl 응답에 confidence 포함 — **완료**. `app.py`에 SGuard 추가해
+  3모델 동시 로드(VRAM 8.9GB/24GB, 16GB 예산 안), 동시 요청 5개도 OOM 없이 처리 확인.
 
 ### 순서와 소요
 
