@@ -21,7 +21,9 @@ guard-lab/
 ## 진행 상태
 
 - [x] Phase 0 — conda env(`guard`) 세팅
-- [ ] Phase 1 — Llama Guard / PolyGuard 논문 리딩 (Phase 5-1순위의 blocker, 진행 중)
+- [x] Phase 1 — Llama Guard / PolyGuard / SGuard-v1 논문 리딩, 세 taxonomy 정렬
+      (`docs/taxonomy_map.md`) — S1-S14가 Llama Guard 원문(O1-O6)이 아니라 LG3부터 MLCommons
+      정렬로 재정의된 것이었다는 점 정정. S11/S13/S14는 SGuard-v1에 대응 카테고리 없음 확인
 - [x] Phase 2 — 스모크 테스트 (raw 출력 확보) — LG3-1B chat template 버그(문자열 content 시
       전부 "safe") 발견/수정, S14 미지원 확인
 - [x] Phase 3 — PGPrompts 재현 평가 en/ko 300샘플 (PolyGuard en 0.9711 / ko 0.9424,
@@ -54,5 +56,6 @@ t2i-lab conda env는 재사용하지 않는다 (diffusers 핀 때문에 transfor
 ## 참고 논문
 
 `../papers/`에 이미 받아둔 관련 PDF: `polyguard.pdf`, `limaguard.pdf`, `mrguard.pdf`,
-`sealguard.pdf`, `sguard.pdf`. Llama Guard(2312.06674) 원문은 아직 없으면 받아서 추가할 것.
-`sguard.pdf`는 Phase 5~7에서 세 번째 비교 모델(SGuard-v1)로 실제 사용 예정.
+`sealguard.pdf`, `sguard.pdf`. **`limaguard.pdf`가 파일명과 달리 Llama Guard 원문(2312.06674)이다**
+— 확인 완료. `sguard.pdf`는 Phase 5~7에서 세 번째 비교 모델(SGuard-v1)로 실제 사용 예정. 세 모델
+taxonomy 정렬은 `docs/taxonomy_map.md` 참고.

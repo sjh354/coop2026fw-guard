@@ -37,7 +37,7 @@ pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
 
 ---
 
-## Phase 1 — 논문 리딩 (반나절, 진행 중)
+## Phase 1 — 논문 리딩 (반나절, 완료 2026-08-05)
 
 목적이 Table 1 수치 대조에서 **taxonomy 정의 파악**으로 넓어졌다. Phase 5~7이 정성 분석(정답
 라벨이 이미 있는 변형 케이스에서 flip을 찾는 작업)으로 바뀌면서, 어떤 모델이 무엇을 unsafe로
@@ -45,14 +45,19 @@ pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
 
 읽는 순서와 볼 곳:
 
-**Llama Guard (2312.06674)** — Section 3의 taxonomy와 instruction format. 여기서 정의한 S1–S14와
-출력 포맷이 이후 모든 논문의 표준이 됐다는 점이 핵심.
+**Llama Guard (2312.06674)** — Section 3의 instruction format이 이후 모든 논문의 표준이 됐다는
+점이 핵심. **단, 이 논문 자체의 taxonomy는 O1–O6 6종**(Violence & Hate 등)이고, 우리가 실제로
+쓰는 S1–S14는 Llama Guard 2/3에서 MLCommons Safety Taxonomy에 맞춰 재정의된 것 — 읽어보기 전
+가정이 틀렸다는 걸 확인함 (`docs/taxonomy_map.md` 참고).
 
 **PolyGuard (2504.04377)** — Section 3(데이터 구축), Table 1(PGPrompts 결과), 그리고
 **Llama Guard 3와 비교한 행**. 이 숫자가 Phase 3의 정답지다. 미리 표로 옮겨둘 것.
 
 **SGuard-v1** — multi-class prediction + binary confidence score를 네이티브로 낸다는 점, 그리고
-한국어·영어 중심 파인튜닝이라는 점을 확인 (Phase 5~7에서 세 번째 비교 모델로 추가).
+한국어·영어 중심 파인튜닝이라는 점을 확인 (Phase 5~7에서 세 번째 비교 모델로 추가). ContentFilter
+컴포넌트가 비교 대상 (`SamsungSDS-Research/SGuard-ContentFilter-2B-v1`, Granite-3.3-2B-Instruct
+베이스) — 5개 카테고리(Violence/Crime/Sexual/Privacy/Manipulation) 각각 safe/unsafe+confidence
+출력. JailbreakFilter는 별도 컴포넌트라 이번 범위 밖.
 
 정리할 것 하나: PolyGuard는 출력이 4~5개 필드(요청 유해성 / 위반 카테고리 / 거부 여부 /
 응답 유해성 / 응답 위반 카테고리)인 반면 Llama Guard는 `safe|unsafe` + 카테고리 한 줄이다.
@@ -63,7 +68,9 @@ pip install transformers accelerate datasets fastapi uvicorn pandas scikit-learn
 자해 등) 분류라 대부분 `safe`로 나온다 — 버그가 아니라 "safety guardrail이 abuse를 애초에
 커버하지 않는다"는 실패 사례 1번 소재.
 
-→ verify: 세 모델의 카테고리 정의를 한 표로 정렬 (`docs/taxonomy_map.md`)
+→ verify: 세 모델의 카테고리 정의를 한 표로 정렬 (`docs/taxonomy_map.md`) — 완료. S11 Self-Harm,
+S13 Elections, S14 Code Interpreter Abuse는 SGuard-v1(MLCommons 12종 기반)에 대응 카테고리가
+없다는 것도 확인 — Phase 6에서 관찰 포인트로 남김
 
 ---
 
