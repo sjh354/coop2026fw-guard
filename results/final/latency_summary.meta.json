@@ -1,0 +1,14 @@
+{
+  "models": {
+    "llamaguard": "meta-llama/Llama-Guard-3-1B",
+    "polyguard": "ToxicityPrompts/PolyGuard-Qwen-Smol",
+    "sguard": "SamsungSDS-Research/SGuard-ContentFilter-2B-v1"
+  },
+  "dtype": "bfloat16",
+  "n_samples_per_model": 50,
+  "n_warmup": 5,
+  "max_new_tokens": 64,
+  "batch_size": 1,
+  "date": "2026-08-11T23:59:07.812276+00:00",
+  "git_commit": "6c0137b8824cfc16135bfd3296fd617b678f8aa0"
+}
