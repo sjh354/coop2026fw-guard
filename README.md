@@ -63,7 +63,9 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
 
 ### 잔여 실험 (`docs/NEW_PLAN.md`)
 
-발표 전 추가 실험 5건(EXP-1~5), 진행 상태:
+발표 전 추가 실험 5건(EXP-1~5) 전부 완료, **`results/final/` 동결됨** (git tag
+`presentation-freeze`, commit `4096476`). 동결 이후 수치 재생성 금지 — 문제 발견 시 발표 자료
+각주로 처리. 진행 상태:
 
 - [x] EXP-1 — Latency 벤치마크. ko probe 원문 30 + PGPrompts en 20 = 50건 × 3모델, batch=1
       순차 측정(`torch.cuda.synchronize()` 전후 호출, warmup 5회 제외). median/p95:
