@@ -17,8 +17,9 @@ guard-lab/
 │   ├── PLAN.md      # Phase 0~7 전체 계획
 │   └── NEW_PLAN.md  # 잔여 실험 EXP-1~5 지시문
 ├── exp/           # EXP-1~5 실험별 단일 스크립트
-├── results/       # {model}_{lang}.csv 평가 결과
-└── results/final/ # EXP-1~5 산출물 CSV + .meta.json
+├── results/       # {model}_{lang}.csv 평가 결과 (+ _conf.csv: confidence 포함 버전)
+├── results/final/ # EXP-1~5 산출물 CSV + .meta.json
+└── figures/       # EXP-3 reliability diagram 등 plot 산출물
 ```
 
 ## 진행 상태
@@ -90,14 +91,23 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       어려운 판정임을 시사. LG3-1B는 response 축 낙폭이 가장 커서(en 0.75→0.45) response 평가에
       특히 취약. `exp/response_harm.py`, `results/final/response_harm_{model}_{lang}.csv`,
       `results/final/harm_axis_summary.csv`
-- [ ] EXP-3 — Confidence calibration (진행 중). 기존 예측 CSV에 logprob/confidence가 저장돼
-      있지 않아(재사용 불가 확인) `models.py`의 `moderate()` confidence 로직(safe/unsafe 결정
-      토큰 2개 softmax)을 `generate_batch()`로 확장, GPU 재실행 필요성을 보고 후 승인받아 진행.
-      PGPrompts en/ko 전량(1699건×3모델) confidence 포함 재실행 완료 — `results/{model}_{lang}_conf.csv`,
-      F1은 기존 결과와 오차범위 내 일치(<1%p, 배치 패딩에 따른 부동소수 차이). **남은 작업**:
-      ko_probe(150행) confidence 재실행, ECE/reliability diagram 계산 및
+- [x] EXP-3 — Confidence calibration. 기존 예측 CSV에 logprob/confidence가 저장돼 있지 않아
+      (재사용 불가 확인) `models.py`의 `moderate()` confidence 로직(safe/unsafe 결정 토큰 2개
+      softmax, SGuard는 5카테고리 네이티브 확률)을 `generate_batch()`로 확장, GPU 재실행
+      필요성을 보고 후 승인받아 진행. PGPrompts en/ko 전량(1699건) + ko_probe(150행) 3모델
+      confidence 포함 재실행(`results/{model}_{lang}_conf.csv`, `results/ko_probe_{model}_conf.csv`),
+      F1은 기존 결과와 오차범위 내 일치(<1%p). `exp/calibration.py`로 모델별 예측을 합쳐
+      10-bin(0.5~1.0) reliability diagram + ECE 계산:
+
+      | model | ECE | n | low-sample bins(n<30) |
+      |---|---|---|---|
+      | LG3-1B | 0.1614 | 3547 | 0 |
+      | PolyGuard | 0.1017 | 3548 | 1 |
+      | SGuard-v1 | 0.1065 | 3548 | 0 |
+
+      세 모델 다 과신(overconfident) — accuracy per bin이 대각선(perfect calibration) 아래에
+      계속 위치. LG3-1B가 가장 심하게 과신(ECE 0.16, confidence 0.9대인데 accuracy는 0.6~0.8대).
       `results/final/calibration_{model}.csv`, `calibration_summary.csv`, `figures/reliability_*.png`
-      산출(`docs/NEW_PLAN.md` EXP-3 참고)
 - [ ] EXP-4 — McNemar 유의성 검정
 - [ ] EXP-5 (선택) — 영어 변형 프로브
 
