@@ -70,7 +70,26 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       커서(3.18 vs 31.6 vs 5) `ms_per_output_token`도 병기 — LG3-1B가 절대 latency는 가장
       빠르지만 토큰당으로는 PolyGuard가 더 느림. `exp/latency_bench.py`, `results/final/latency_raw.csv`,
       `results/final/latency_summary.csv`
-- [ ] EXP-2 — Response harmfulness 재현
+- [x] EXP-2 — Response harmfulness 재현. **계획 수정**: 기존 `results/{model}_{lang}.csv`는
+      PolyGuard/SGuard도 response=""(빈 응답)로 실행됐던 게 확인돼 재활용 불가 판정 →
+      3모델 전부 재실행(en/ko 각 1689건, `response_harm_label` 정답 필드). LG3-1B는 user+assistant
+      두 턴을 넣으면 chat template이 자동으로 Agent 평가 모드로 전환됨(별도 포맷 불필요).
+      PGPrompts response 필드에 40k+ 토큰 이상치가 섞여 있어 1차 실행이 CUDA OOM으로 중단됨
+      — `models.py`에 `truncation=True, max_length=2048` 추가(영향 샘플 <1%)로 해결.
+
+      | model | axis | en F1 | ko F1 |
+      |---|---|---|---|
+      | PolyGuard | prompt | 0.8729 | 0.8158 |
+      | PolyGuard | response | 0.7392 | 0.6333 |
+      | LG3-1B | prompt | 0.7478 | 0.5693 |
+      | LG3-1B | response | 0.4530 | 0.3669 |
+      | SGuard-v1 | prompt | 0.8877 | 0.7538 |
+      | SGuard-v1 | response | 0.7957 | 0.4748 |
+
+      세 모델 다 response 축이 prompt 축보다 F1이 낮다 — response harmfulness가 prompt harmfulness보다
+      어려운 판정임을 시사. LG3-1B는 response 축 낙폭이 가장 커서(en 0.75→0.45) response 평가에
+      특히 취약. `exp/response_harm.py`, `results/final/response_harm_{model}_{lang}.csv`,
+      `results/final/harm_axis_summary.csv`
 - [ ] EXP-3 — Confidence calibration
 - [ ] EXP-4 — McNemar 유의성 검정
 - [ ] EXP-5 (선택) — 영어 변형 프로브
