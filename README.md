@@ -15,7 +15,8 @@ guard-lab/
 ├── app.py         # FastAPI 서빙
 ├── docs/
 │   ├── PLAN.md      # Phase 0~7 전체 계획
-│   └── NEW_PLAN.md  # 잔여 실험 EXP-1~5 지시문
+│   ├── NEW_PLAN.md  # 잔여 실험 EXP-1~5 지시문
+│   └── results_summary.html  # 발표용 EXP-1~5 결과 요약 (단일 HTML, 브라우저로 열기)
 ├── exp/           # EXP-1~5 실험별 단일 스크립트
 ├── results/       # {model}_{lang}.csv 평가 결과 (+ _conf.csv: confidence 포함 버전)
 ├── results/final/ # EXP-1~5 산출물 CSV + .meta.json

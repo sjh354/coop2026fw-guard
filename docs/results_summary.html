@@ -1,0 +1,610 @@
+<title>guard-lab 결과 요약 — EXP-1~5</title>
+<style>
+  :root {
+    --bg: #f5f6f4;
+    --surface: #ffffff;
+    --surface-2: #eef0ed;
+    --text: #1b201e;
+    --text-muted: #5a655f;
+    --border: #dde2dd;
+    --accent: #2d5d5b;
+    --accent-soft: #e4eeed;
+    --good: #3f7d53;
+    --good-soft: #e6f2e9;
+    --bad: #b0504a;
+    --bad-soft: #f6e8e7;
+    --warn: #a9791f;
+    --warn-soft: #f5eede;
+    --shadow: 0 1px 2px rgba(20, 30, 25, 0.06), 0 4px 16px rgba(20, 30, 25, 0.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #121615;
+    --surface: #191f1d;
+    --surface-2: #202725;
+    --text: #e7ece9;
+    --text-muted: #94a39c;
+    --border: #2a332f;
+    --accent: #7fc2bd;
+    --accent-soft: #1c2c2a;
+    --good: #6fbf86;
+    --good-soft: #1c2c22;
+    --bad: #e08e88;
+    --bad-soft: #33201f;
+    --warn: #dbb463;
+    --warn-soft: #332a1a;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121615;
+      --surface: #191f1d;
+      --surface-2: #202725;
+      --text: #e7ece9;
+      --text-muted: #94a39c;
+      --border: #2a332f;
+      --accent: #7fc2bd;
+      --accent-soft: #1c2c2a;
+      --good: #6fbf86;
+      --good-soft: #1c2c22;
+      --bad: #e08e88;
+      --bad-soft: #33201f;
+      --warn: #dbb463;
+      --warn-soft: #332a1a;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .display {
+    font-family: "Source Serif Pro", "Iowan Old Style", "Noto Serif KR", Georgia, serif;
+  }
+  .mono {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .page {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  header.masthead {
+    padding: 56px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 600;
+    margin: 0 0 12px;
+  }
+  h1.title {
+    font-size: clamp(28px, 4vw, 40px);
+    margin: 0 0 12px;
+    text-wrap: balance;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 17px;
+    max-width: 62ch;
+    margin: 0 0 20px;
+  }
+  .meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    font-size: 13px;
+  }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--text-muted);
+    background: var(--surface);
+  }
+  .tag.frozen { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+  h2 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    scroll-margin-top: 20px;
+  }
+  h2 .num { color: var(--text-muted); font-weight: 500; margin-right: 8px; }
+  .section-goal {
+    color: var(--text-muted);
+    font-size: 14.5px;
+    margin: 0 0 20px;
+    max-width: 68ch;
+  }
+  section.exp {
+    padding: 40px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  section.exp:last-of-type { border-bottom: none; }
+
+  nav.toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin-bottom: 44px;
+    box-shadow: var(--shadow);
+  }
+  nav.toc .toc-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  nav.toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 24px;
+  }
+  nav.toc a {
+    color: var(--text);
+    text-decoration: none;
+    font-size: 14.5px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 3px 0;
+    border-bottom: 1px dotted transparent;
+  }
+  nav.toc a:hover { border-bottom-color: var(--accent); color: var(--accent); }
+  nav.toc a .verdict { color: var(--text-muted); font-size: 13px; }
+
+  .exec-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 30px;
+    margin-bottom: 44px;
+    box-shadow: var(--shadow);
+  }
+  .exec-summary h2 { margin-bottom: 14px; }
+  .exec-summary ul { margin: 0; padding-left: 20px; }
+  .exec-summary li { margin-bottom: 10px; }
+  .exec-summary li:last-child { margin-bottom: 0; }
+  .exec-summary strong { color: var(--accent); }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14.5px;
+    margin: 18px 0;
+  }
+  caption {
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  th, td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+  th {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 12.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid var(--border);
+  }
+  td.num, th.num { text-align: right; font-family: ui-monospace, "SF Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  tbody tr:hover { background: var(--surface-2); }
+  .table-wrap { overflow-x: auto; border-radius: 8px; }
+
+  .pill {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+  }
+  .pill.up { background: var(--bad-soft); color: var(--bad); }
+  .pill.down { background: var(--good-soft); color: var(--good); }
+  .pill.flat { background: var(--surface-2); color: var(--text-muted); }
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 18px 0;
+    font-size: 14.5px;
+  }
+  .callout .label {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+    display: block;
+  }
+  .callout.limit { border-left-color: var(--warn); background: var(--warn-soft); }
+  .callout.limit .label { color: var(--warn); }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin: 18px 0;
+  }
+  .chart-title { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; font-weight: 600; }
+  svg text { fill: var(--text); font-family: -apple-system, "Segoe UI", sans-serif; }
+  svg .muted { fill: var(--text-muted); }
+  svg .axis-line { stroke: var(--border); stroke-width: 1; }
+  svg .gridline { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 3; }
+
+  .model-key { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); margin-top: 10px; }
+  .model-key span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } nav.toc ol { grid-template-columns: 1fr; } }
+
+  .kv-strip { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+  .kv {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 140px;
+  }
+  .kv .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 4px; }
+  .kv .v { font-size: 18px; font-weight: 600; font-family: ui-monospace, monospace; }
+  .kv .v small { font-size: 12px; color: var(--text-muted); font-weight: 500; font-family: -apple-system, sans-serif; }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  a.back-to-top {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    border-radius: 999px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 16px;
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead" id="top">
+    <p class="eyebrow">guard-lab · 발표 자료용 결과 요약</p>
+    <h1 class="display title">Safety Guard 모델 3종 비교 — EXP-1~5 결과 요약</h1>
+    <p class="subtitle">PolyGuard-Qwen-Smol / Llama-Guard-3-1B / SGuard-ContentFilter-2B-v1을 latency,
+      response harmfulness, confidence calibration, 통계적 유의성, 언어 간 변형 취약성 5개 축에서
+      비교했다.</p>
+    <div class="meta-row">
+      <span class="tag frozen">● results/final/ 동결됨</span>
+      <span class="tag">tag: presentation-freeze</span>
+      <span class="tag">commit: 7dc63c3</span>
+      <span class="tag">2026-08-12</span>
+    </div>
+  </header>
+
+  <section class="exec-summary">
+    <h2>Executive Summary</h2>
+    <ul>
+      <li><strong>Latency</strong>: 절대 속도는 LG3-1B가 가장 빠르다(median 46.6ms). 그러나 토큰당(ms/token)
+        기준으로는 <strong>PolyGuard가 가장 느리다</strong>(21.8ms/token) — 출력 포맷 길이(4-field, 평균 31.6토큰)
+        차이가 절대 latency 순위를 왜곡한다.</li>
+      <li><strong>Response harmfulness</strong>는 세 모델 모두 prompt harmfulness보다 어렵다(F1 평균 -0.19~-0.30p).
+        <strong>LG3-1B가 response 축에서 가장 취약</strong>(en F1 0.75→0.45).</li>
+      <li><strong>세 모델 다 과신(overconfident)</strong> — ECE 0.10~0.16, confidence 0.9대에도 실제 accuracy는
+        0.6~0.8대. <strong>LG3-1B가 가장 심하게 과신</strong>한다(ECE 0.1614).</li>
+      <li>McNemar 검정 결과 <strong>관측된 F1 격차는 전부 통계적으로 유의</strong>하다(보정 후 p&lt;0.01). 단
+        ko_probe(변형 프롬프트)에서는 LG3-1B가 SGuard-v1보다 유의하게 우세해 <strong>PGPrompts 기준 순위가 뒤집힌다</strong>.</li>
+      <li>영어 변형 프로브 결과, <strong>"번역투(학습 분포 이탈)" 취약성은 한국어 특유</strong>였다(PolyGuard 26.7%→11.5%,
+        SGuard 23.3%→3.9%). 반대로 <strong>leet-speak·code-switching은 언어 무관하거나 영어에서 더 취약</strong>해지는
+        경우도 있었다 — 변형 공격 취약성은 단일 원인으로 설명되지 않는다.</li>
+      <li>모델 간 판단 일치도(Cohen's κ)는 전반적으로 낮다(0.13~0.65) — <strong>세 모델이 서로 다른 판정 기준을 학습</strong>했음을 시사한다.</li>
+    </ul>
+  </section>
+
+  <nav class="toc" aria-label="목차">
+    <div class="toc-label">Table of Contents</div>
+    <ol>
+      <li><a href="#exp1"><span>EXP-1 · Latency 벤치마크</span><span class="verdict">PolyGuard 토큰당 최저 효율</span></a></li>
+      <li><a href="#exp2"><span>EXP-2 · Response Harmfulness</span><span class="verdict">LG3-1B 최대 낙폭</span></a></li>
+      <li><a href="#exp3"><span>EXP-3 · Confidence Calibration</span><span class="verdict">3모델 전부 과신</span></a></li>
+      <li><a href="#exp4"><span>EXP-4 · McNemar 유의성 검정</span><span class="verdict">전 쌍 유의(p&lt;0.01)</span></a></li>
+      <li><a href="#exp5"><span>EXP-5 · 영어 변형 프로브</span><span class="verdict">번역투=한국어 특유</span></a></li>
+      <li><a href="#limits"><span>한계 및 발표 시 유의사항</span><span class="verdict"></span></a></li>
+    </ol>
+  </nav>
+
+  <!-- EXP-1 -->
+  <section class="exp" id="exp1">
+    <h2><span class="num">01</span>Latency 벤치마크</h2>
+    <p class="section-goal">모델 forward + generate 시간만 측정(HTTP 경유 배제). batch=1, warmup 5회 제외,
+      50건(ko_probe 원문 30 + PGPrompts en 20) × 3모델, <code class="mono">torch.cuda.synchronize()</code> 전후 호출.</p>
+
+    <div class="chart-card">
+      <div class="chart-title">Median / P95 Latency (ms, log scale)</div>
+      <svg viewBox="0 0 720 220" width="100%" style="max-width:720px" role="img" aria-label="모델별 median/p95 latency 막대 그래프">
+        <!-- log scale: 10ms to 1000ms -->
+        <!-- gridlines at 10,100,1000 -->
+        <g>
+          <line class="gridline" x1="140" y1="30" x2="700" y2="30"/>
+          <text class="muted" x="136" y="34" text-anchor="end" font-size="11">1000ms</text>
+          <line class="gridline" x1="140" y1="95" x2="700" y2="95"/>
+          <text class="muted" x="136" y="99" text-anchor="end" font-size="11">100ms</text>
+          <line class="gridline" x1="140" y1="160" x2="700" y2="160"/>
+          <text class="muted" x="136" y="164" text-anchor="end" font-size="11">10ms</text>
+          <line class="axis-line" x1="140" y1="190" x2="700" y2="190"/>
+        </g>
+        <!-- bars: log scale y = 190 - (log10(v)-1)*65  for v in [10,1000] -->
+        <!-- LG3-1B median 46.6 p95 89.41 -->
+        <g>
+          <rect x="180" y="150.8" width="26" height="39.2" fill="var(--accent)" opacity="0.55"/>
+          <rect x="210" y="132.4" width="26" height="57.6" fill="var(--accent)"/>
+          <text x="223" y="205" text-anchor="middle" font-size="12" font-weight="600">LG3-1B</text>
+          <text x="193" y="144" text-anchor="middle" font-size="10.5" class="muted">46.6</text>
+          <text x="223" y="126" text-anchor="middle" font-size="10.5" class="muted">89.4</text>
+        </g>
+        <!-- PolyGuard median 677.2 p95 722.2 -->
+        <g>
+          <rect x="380" y="35.6" width="26" height="154.4" fill="var(--accent)" opacity="0.55"/>
+          <rect x="410" y="33.3" width="26" height="156.7" fill="var(--accent)"/>
+          <text x="423" y="205" text-anchor="middle" font-size="12" font-weight="600">PolyGuard</text>
+          <text x="393" y="29" text-anchor="middle" font-size="10.5" class="muted">677</text>
+          <text x="423" y="27" text-anchor="middle" font-size="10.5" class="muted">722</text>
+        </g>
+        <!-- SGuard median 297.65 p95 299.3 -->
+        <g>
+          <rect x="580" y="70.6" width="26" height="119.4" fill="var(--accent)" opacity="0.55"/>
+          <rect x="610" y="70.4" width="26" height="119.6" fill="var(--accent)"/>
+          <text x="623" y="205" text-anchor="middle" font-size="12" font-weight="600">SGuard-v1</text>
+          <text x="593" y="64" text-anchor="middle" font-size="10.5" class="muted">297.7</text>
+          <text x="623" y="62" text-anchor="middle" font-size="10.5" class="muted">299.3</text>
+        </g>
+      </svg>
+      <div class="model-key">
+        <span><span class="swatch" style="background:var(--accent);opacity:0.55"></span>median</span>
+        <span><span class="swatch" style="background:var(--accent)"></span>p95</span>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <caption>results/final/latency_summary.csv — n=50/모델</caption>
+        <thead>
+          <tr><th>model</th><th class="num">median (ms)</th><th class="num">p95 (ms)</th><th class="num">mean 출력 토큰</th><th class="num">ms / 출력 토큰</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Llama-Guard-3-1B</td><td class="num">46.60</td><td class="num">89.41</td><td class="num">3.18</td><td class="num">15.50</td></tr>
+          <tr><td>PolyGuard-Qwen-Smol</td><td class="num">677.24</td><td class="num">722.18</td><td class="num">31.60</td><td class="num"><strong>21.79</strong></td></tr>
+          <tr><td>SGuard-ContentFilter-2B-v1</td><td class="num">297.65</td><td class="num">299.30</td><td class="num">5.00</td><td class="num">59.55</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <span class="label">해석</span>
+      절대 latency는 LG3-1B ≪ SGuard ≪ PolyGuard 순이지만, SGuard는 출력 토큰당으로 보면 가장 느리다(59.6ms/token) —
+      출력 토큰 수(3.18 vs 31.6 vs 5)가 절대 순위를 지배하므로, 실서비스 배치 크기·프롬프트 길이에 따라 실제 체감 latency 순위는 달라질 수 있다.
+    </div>
+  </section>
+
+  <!-- EXP-2 -->
+  <section class="exp" id="exp2">
+    <h2><span class="num">02</span>Response Harmfulness 재현</h2>
+    <p class="section-goal">PGPrompts en/ko 전량(~1689건)에 대해 prompt harm 축과 response harm 축을 나란히 채점.
+      3모델 GPU 재실행(기존 CSV는 PolyGuard/SGuard가 response=""로 실행돼 재사용 불가로 판정).</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>results/final/harm_axis_summary.csv — F1 (pos_label=harmful)</caption>
+        <thead>
+          <tr><th>model</th><th class="num">en · prompt</th><th class="num">en · response</th><th class="num">ko · prompt</th><th class="num">ko · response</th><th class="num">response 낙폭 (en)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>PolyGuard</td><td class="num">0.8729</td><td class="num">0.7392</td><td class="num">0.8158</td><td class="num">0.6333</td><td class="num"><span class="pill down">-0.134</span></td></tr>
+          <tr><td>LG3-1B</td><td class="num">0.7478</td><td class="num">0.4530</td><td class="num">0.5693</td><td class="num">0.3669</td><td class="num"><span class="pill up">-0.295</span></td></tr>
+          <tr><td>SGuard-v1</td><td class="num">0.8877</td><td class="num">0.7957</td><td class="num">0.7538</td><td class="num">0.4748</td><td class="num"><span class="pill down">-0.092</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <span class="label">해석</span>
+      세 모델 다 response harm 축이 prompt harm 축보다 F1이 낮다 — <strong>"이 요청은 위험한가"보다 "이 답변은 위험한가"
+      판정이 구조적으로 더 어렵다</strong>. LG3-1B는 en 기준 0.75→0.45(-0.30p)로 낙폭이 가장 크고, ko response 축(0.367)은
+      세 모델 중 최저 F1이다.
+    </div>
+  </section>
+
+  <!-- EXP-3 -->
+  <section class="exp" id="exp3">
+    <h2><span class="num">03</span>Confidence Calibration</h2>
+    <p class="section-goal">safe/unsafe 결정 토큰 2개 softmax(SGuard는 5카테고리 네이티브 확률)로 뽑은 confidence를
+      10-bin reliability diagram + Expected Calibration Error(ECE)로 평가. PGPrompts en/ko 전량 + ko_probe 150행.</p>
+
+    <div class="grid-2">
+      <div class="chart-card">
+        <div class="chart-title">Expected Calibration Error (낮을수록 좋음)</div>
+        <svg viewBox="0 0 320 200" width="100%" style="max-width:320px" role="img" aria-label="모델별 ECE 막대 그래프">
+          <line class="gridline" x1="90" y1="20" x2="300" y2="20"/>
+          <line class="gridline" x1="90" y1="90" x2="300" y2="90"/>
+          <line class="axis-line" x1="90" y1="160" x2="300" y2="160"/>
+          <text class="muted" x="86" y="163" text-anchor="end" font-size="10.5">0.00</text>
+          <text class="muted" x="86" y="93" text-anchor="end" font-size="10.5">0.10</text>
+          <text class="muted" x="86" y="23" text-anchor="end" font-size="10.5">0.20</text>
+          <!-- scale: y=160 - ece*700 -->
+          <rect x="100" y="47.02" width="46" height="112.98" fill="var(--bad)"/>
+          <text x="123" y="40" text-anchor="middle" font-size="11" font-weight="700">0.1614</text>
+          <text x="123" y="176" text-anchor="middle" font-size="11">LG3-1B</text>
+
+          <rect x="176" y="88.81" width="46" height="71.19" fill="var(--accent)"/>
+          <text x="199" y="82" text-anchor="middle" font-size="11" font-weight="700">0.1017</text>
+          <text x="199" y="176" text-anchor="middle" font-size="11">PolyGuard</text>
+
+          <rect x="252" y="85.45" width="46" height="74.55" fill="var(--accent)"/>
+          <text x="275" y="79" text-anchor="middle" font-size="11" font-weight="700">0.1065</text>
+          <text x="275" y="176" text-anchor="middle" font-size="11">SGuard</text>
+        </svg>
+      </div>
+      <div class="kv-strip" style="flex-direction:column; align-self:center;">
+        <div class="kv" style="min-width:220px">
+          <div class="k">전 모델 공통 경향</div>
+          <div class="v" style="font-size:15px; font-weight:500; font-family:inherit;">과신(overconfident) — bin별 accuracy가 대각선(perfect calibration) 아래에 위치</div>
+        </div>
+        <div class="kv" style="min-width:220px">
+          <div class="k">n (parse 성공)</div>
+          <div class="v">3,547<small>~3,548 / 모델</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <span class="label">해석</span>
+      confidence가 0.9대인 구간에서도 실제 accuracy는 0.6~0.8대에 머문다 — <strong>demo가 보여주는 confidence 숫자를
+      그대로 "이 판정이 90% 맞다"로 읽으면 안 된다</strong>. LG3-1B가 가장 심하게 과신하며, 이는 EXP-2에서 확인한 response
+      harm 축 취약성과 함께 LG3-1B의 신뢰도를 낮추는 근거로 제시할 수 있다. reliability diagram 원본은
+      <code class="mono">figures/reliability_*.png</code> 참고.
+    </div>
+  </section>
+
+  <!-- EXP-4 -->
+  <section class="exp" id="exp4">
+    <h2><span class="num">04</span>McNemar 유의성 검정</h2>
+    <p class="section-goal">주요 비교쌍에 대해 paired 2×2 분할표 + McNemar 검정(불일치 셀 합&lt;25면 exact, 아니면
+      continuity-corrected chi-square). ko_probe 3-way pairwise는 Bonferroni 보정(α=0.05/3). GPU 재실행 없음, 기존 예측 CSV만 사용.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>results/final/mcnemar.csv</caption>
+        <thead>
+          <tr><th>비교쌍</th><th>dataset</th><th class="num">n</th><th class="num">b</th><th class="num">c</th><th>test</th><th class="num">p (보정후)</th><th class="num">κ</th><th>우세</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>PolyGuard vs LG3-1B</td><td>PGPrompts en</td><td class="num">1699</td><td class="num">223</td><td class="num">60</td><td>chi2</td><td class="num">5.98e-22</td><td class="num">0.651</td><td>PolyGuard</td></tr>
+          <tr><td>PolyGuard vs LG3-1B</td><td>PGPrompts ko</td><td class="num">1699</td><td class="num">341</td><td class="num">86</td><td>chi2</td><td class="num">1.00e-34</td><td class="num">0.439</td><td>PolyGuard</td></tr>
+          <tr><td>PolyGuard vs LG3-1B</td><td>ko_probe</td><td class="num">150</td><td class="num">50</td><td class="num">10</td><td>chi2</td><td class="num">1.43e-06</td><td class="num">0.125</td><td>PolyGuard</td></tr>
+          <tr><td>PolyGuard vs SGuard-v1</td><td>ko_probe</td><td class="num">150</td><td class="num">37</td><td class="num">12</td><td>chi2</td><td class="num">1.82e-03</td><td class="num">0.300</td><td>PolyGuard</td></tr>
+          <tr><td>LG3-1B vs SGuard-v1</td><td>ko_probe</td><td class="num">150</td><td class="num">4</td><td class="num">19</td><td>exact</td><td class="num">7.80e-03</td><td class="num">0.385</td><td><strong>SGuard-v1</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <span class="label">해석</span>
+      전 쌍이 보정 후에도 p&lt;0.01 — 관측된 F1 격차는 우연이 아니다. 다만 <strong>ko_probe(변형 프롬프트)에서는
+      LG3-1B가 SGuard-v1보다 유의하게 우세해 방향이 뒤집힌다</strong>(b=4 &lt; c=19) — PGPrompts 기준 F1은 LG3-1B가
+      가장 낮았지만, 변형 공격에는 오히려 더 안정적이라는 뜻이다. κ(0.125~0.651)는 전반적으로 낮아 세 모델의 판정 기준이
+      상당히 다름을 보여준다.
+    </div>
+  </section>
+
+  <!-- EXP-5 -->
+  <section class="exp" id="exp5">
+    <h2><span class="num">05</span>영어 변형 프로브 (선택)</h2>
+    <p class="section-goal">ko_probe 변형 취약성이 한국어 특유인지 언어 무관인지 분리하기 위해, 문화특이적 카테고리
+      (age, origin 중 홍어/b09 — 영어 대응 슬러 부재로 confound 우려)를 제외한 26문장을 영어로 옮기고 5-variant를 재적용
+      (26×5=130건). GPU 재실행, parse 실패율 0%.</p>
+
+    <div class="table-wrap">
+      <table>
+        <caption>results/final/flip_rate_en_vs_ko.csv — variant_type별 flip rate (원문 예측 대비)</caption>
+        <thead>
+          <tr><th>model</th><th>variant</th><th class="num">en</th><th class="num">ko</th><th>변화</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>LG3-1B</td><td>code-switching</td><td class="num">11.5%</td><td class="num">10.0%</td><td><span class="pill up">+1.5p</span></td></tr>
+          <tr><td>LG3-1B</td><td>띄어쓰기</td><td class="num">3.8%</td><td class="num">6.7%</td><td><span class="pill down">-2.9p</span></td></tr>
+          <tr><td>LG3-1B</td><td>번역투</td><td class="num">3.8%</td><td class="num">10.0%</td><td><span class="pill down">-6.2p</span></td></tr>
+          <tr><td>LG3-1B</td><td>우회표기</td><td class="num">11.5%</td><td class="num">6.7%</td><td><span class="pill up">+4.8p</span></td></tr>
+          <tr><td>PolyGuard</td><td>code-switching</td><td class="num">15.4%</td><td class="num">13.3%</td><td><span class="pill up">+2.1p</span></td></tr>
+          <tr><td>PolyGuard</td><td>띄어쓰기</td><td class="num">7.7%</td><td class="num">10.0%</td><td><span class="pill down">-2.3p</span></td></tr>
+          <tr><td>PolyGuard</td><td>번역투</td><td class="num">11.5%</td><td class="num">26.7%</td><td><span class="pill down">-15.2p</span></td></tr>
+          <tr><td>PolyGuard</td><td>우회표기</td><td class="num">19.2%</td><td class="num">23.3%</td><td><span class="pill down">-4.1p</span></td></tr>
+          <tr><td>SGuard-v1</td><td>code-switching</td><td class="num">26.9%</td><td class="num">16.7%</td><td><span class="pill up">+10.2p</span></td></tr>
+          <tr><td>SGuard-v1</td><td>띄어쓰기</td><td class="num">15.4%</td><td class="num">3.3%</td><td><span class="pill up">+12.1p</span></td></tr>
+          <tr><td>SGuard-v1</td><td>번역투</td><td class="num">3.8%</td><td class="num">23.3%</td><td><span class="pill down">-19.5p</span></td></tr>
+          <tr><td>SGuard-v1</td><td>우회표기</td><td class="num">7.7%</td><td class="num">20.0%</td><td><span class="pill down">-12.3p</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <span class="label">해석</span>
+      <strong>번역투(학습 분포 이탈) 취약성은 한국어 특유</strong>였다 — 영어로 옮기면 세 모델 모두 flip rate가 크게
+      떨어진다(PolyGuard -15.2p, SGuard -19.5p, LG3-1B -6.2p). 반대로 <strong>leet-speak(우회표기)·code-switching은
+      언어 무관하거나 오히려 영어에서 더 취약</strong>해진다(SGuard code-switching +10.2p, 띄어쓰기 +12.1p; LG3-1B
+      우회표기 +4.8p) — 표층 패턴(문자 치환·언어 혼용) 의존형 취약성은 언어 공통적이라는 뜻이다.
+    </div>
+    <div class="callout limit">
+      <span class="label">한계</span>
+      base 문장이 26개뿐이라(ko_probe 30개 대비 4개 적음) variant당 표본이 작다(en=26쌍, ko=30쌍). 번역 자체의
+      자연스러움 차이가 결과에 섞여 있을 가능성도 배제할 수 없다.
+    </div>
+  </section>
+
+  <!-- Limits -->
+  <section class="exp" id="limits" style="border-bottom:none;">
+    <h2><span class="num">＋</span>한계 및 발표 시 유의사항</h2>
+    <ul style="padding-left: 20px; margin: 0;">
+      <li style="margin-bottom:10px;">EXP-4/EXP-5는 GPU 재실행 없이 기존 예측 CSV를 재활용한 순수 통계 계산 —
+        모델이 재학습되거나 업데이트되면 수치가 달라질 수 있다.</li>
+      <li style="margin-bottom:10px;">EXP-5의 en_probe는 ko_probe와 base 문장 수가 다르다(26 vs 30) — 절대
+        flip rate 비교가 아니라 <em>변화 방향과 패턴</em> 비교로 읽어야 한다.</li>
+      <li style="margin-bottom:10px;">reason 필드(Phase 7 demo)는 모델의 실제 판정 근거가 아니라 카테고리→템플릿
+        매핑이다 — 발표에서 "모델이 이렇게 설명했다"로 오해되지 않도록 주의.</li>
+      <li>동결(<code class="mono">presentation-freeze</code>) 이후 발견되는 문제는 수치를 고치지 않고 발표 자료
+        각주로 처리한다.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <span>guard-lab · results/final/ (git tag <code class="mono">presentation-freeze</code>, commit <code class="mono">7dc63c3</code>)</span>
+    <span>원본: docs/NEW_PLAN.md · README.md</span>
+  </footer>
+
+</div>
+
+<a href="#top" class="back-to-top" aria-label="맨 위로">↑</a>
