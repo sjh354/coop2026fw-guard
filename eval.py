@@ -120,6 +120,53 @@ def run_eval_multilingual(model_name, batch_size, max_new_tokens, tag="", data_f
     print(f"saved: {out_path}")
 
 
+def run_eval_multilingual_variants(model_name, batch_size, max_new_tokens, tag="", data_file="data/multilingual_variants.csv"):
+    """D4 확장: exp/multilingual_variants.py가 생성한 7언어 variant를 예측만 하고 저장.
+    flip rate는 base 예측(results/multilingual_{model}.csv, track B)과 조인해
+    exp/flip_compare_multilingual.py에서 별도 계산 — base를 다시 예측하지 않고 EXP-6 기존
+    결과를 재사용해 GPU 시간을 아낀다."""
+    df_in = pd.read_csv(data_file)
+    df_in = df_in.dropna(subset=["text"])
+
+    tok, model = load(MODEL_IDS[model_name])
+    tok.padding_side = "left"
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
+
+    label_map = {"harmful": "unsafe", "unharmful": "safe"}
+    rows = []
+    for start in range(0, len(df_in), batch_size):
+        batch = df_in.iloc[start : start + batch_size]
+        texts = [build_prompt_text(tok, model_name, p) for p in batch["text"]]
+        pred_labels, raw_outputs, confidences = generate_batch(model_name, tok, model, texts, max_new_tokens)
+
+        for (_, r), pred, raw, conf in zip(batch.iterrows(), pred_labels, raw_outputs, confidences):
+            rows.append(
+                {
+                    "base_id": r["base_id"],
+                    "lang": r["lang"],
+                    "variant_type": r["variant_type"],
+                    "text": r["text"],
+                    "true_label": r["label"],
+                    "pred_label": label_map.get(pred, pred),
+                    "raw_output": raw,
+                    "confidence": conf,
+                }
+            )
+        print(f"{model_name}/multilingual_variants: {min(start + batch_size, len(df_in))}/{len(df_in)}")
+
+    del model
+    torch.cuda.empty_cache()
+
+    df = pd.DataFrame(rows)
+    parse_fail_rate = df["pred_label"].isna().mean()
+    print(f"parse failure rate: {parse_fail_rate:.2%}")
+
+    out_path = f"results/multilingual_variants_{model_name}{tag}.csv"
+    df.to_csv(out_path, index=False)
+    print(f"saved: {out_path}")
+
+
 def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens, tag=""):
     ds = load_dataset("ToxicityPrompts/PolyGuardPrompts", split="test")
     ds = ds.filter(lambda x: x["language"] == LANG_NAMES[lang] and x["prompt_harm_label"] is not None)
@@ -173,6 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--ko-probe", action="store_true", help="data/ko_probe.csv로 flip rate 평가 (Phase 5)")
     parser.add_argument("--probe-file", default="data/ko_probe.csv", help="--ko-probe 사용 시 입력 CSV 경로 (예: data/en_probe.csv)")
     parser.add_argument("--multilingual", action="store_true", help="data/multilingual_base.csv(Track A/B)로 7개 언어 평가")
+    parser.add_argument("--multilingual-variants", action="store_true", help="data/multilingual_variants.csv(D4 확장)로 7개 언어 variant 평가")
     parser.add_argument("--n", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=64)
@@ -183,6 +231,8 @@ if __name__ == "__main__":
         run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens, args.tag, args.probe_file, out_prefix)
     elif args.multilingual:
         run_eval_multilingual(args.model, args.batch_size, args.max_new_tokens, args.tag)
+    elif args.multilingual_variants:
+        run_eval_multilingual_variants(args.model, args.batch_size, args.max_new_tokens, args.tag)
     else:
         if not args.lang:
             parser.error("--lang은 --ko-probe가 아닐 때 필수")
