@@ -1,0 +1,17 @@
+{
+  "script": "exp/en_variants.py + exp/flip_compare_exp5.py",
+  "generated_at": "2026-08-12T01:48:16+00:00",
+  "git_commit": "17c5494059fbf8b425ed1e41003096cbfda3d4e0",
+  "models": [
+    "meta-llama/Llama-Guard-3-1B",
+    "ToxicityPrompts/PolyGuard-Qwen-Smol",
+    "SamsungSDS-Research/SGuard-ContentFilter-2B-v1"
+  ],
+  "dtype": "bf16",
+  "generation": {"do_sample": false, "max_new_tokens": 64, "padding_side": "left"},
+  "note": "en_probe.csv는 ko_probe base 30문장 중 문화특이적 카테고리(age 3개, origin 중 홍어/b09 1개)를 제외한 26문장을 영어로 자동 번역 후 5-variant(원문/우회표기/띄어쓰기/번역투/code-switching) 적용, 총 130행. ko_probe(150행, 30 base)와 base 세트 크기가 달라 절대 비교가 아니라 variant_type별 flip rate 패턴 비교 목적.",
+  "sources": {
+    "ko": "results/ko_probe_{model}.csv",
+    "en": "results/en_probe_{model}.csv"
+  }
+}
