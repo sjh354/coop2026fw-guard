@@ -68,7 +68,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
     print(f"saved: {out_path}")
 
 
-def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
+def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens, tag=""):
     ds = load_dataset("ToxicityPrompts/PolyGuardPrompts", split="test")
     ds = ds.filter(lambda x: x["language"] == LANG_NAMES[lang] and x["prompt_harm_label"] is not None)
     ds = ds.select(range(min(n_samples, len(ds))))
@@ -109,7 +109,7 @@ def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
     print(f"parse failure rate: {parse_fail_rate:.2%}")
     print(f"F1 (pos_label=harmful, parse 실패 제외 {len(valid)}/{len(df)}건): {f1:.4f}")
 
-    out_path = f"results/{model_name}_{lang}.csv"
+    out_path = f"results/{model_name}_{lang}{tag}.csv"
     df.to_csv(out_path, index=False)
     print(f"saved: {out_path}")
 
@@ -122,10 +122,11 @@ if __name__ == "__main__":
     parser.add_argument("--n", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=64)
+    parser.add_argument("--tag", default="", help="출력 파일명에 붙일 접미사, 예: _conf (기존 결과 덮어쓰지 않기 위함)")
     args = parser.parse_args()
     if args.ko_probe:
         run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens)
     else:
         if not args.lang:
             parser.error("--lang은 --ko-probe가 아닐 때 필수")
-        run_eval(args.model, args.lang, args.n, args.batch_size, args.max_new_tokens)
+        run_eval(args.model, args.lang, args.n, args.batch_size, args.max_new_tokens, args.tag)
