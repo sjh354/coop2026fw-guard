@@ -1,0 +1,28 @@
+{
+  "models": {
+    "polyguard": "ToxicityPrompts/PolyGuard-Qwen-Smol",
+    "llamaguard": "meta-llama/Llama-Guard-3-1B",
+    "sguard": "SamsungSDS-Research/SGuard-ContentFilter-2B-v1"
+  },
+  "dataset": "ToxicityPrompts/PolyGuardPrompts",
+  "label_field": "response_harm_label",
+  "dtype": "bfloat16",
+  "batch_size": 16,
+  "max_new_tokens": 64,
+  "exclusions": {
+    "en": {
+      "n_total_prompt_harm_labeled": 1699,
+      "excluded_missing_response_harm_label": 10,
+      "excluded_empty_response": 0,
+      "n_evaluated": 1689
+    },
+    "ko": {
+      "n_total_prompt_harm_labeled": 1699,
+      "excluded_missing_response_harm_label": 10,
+      "excluded_empty_response": 0,
+      "n_evaluated": 1689
+    }
+  },
+  "date": "2026-08-12T00:32:12.909842+00:00",
+  "git_commit": "c6717c72674c34eef7527cfaab4682da9f73021e"
+}

@@ -1,0 +1,13 @@
+model,lang,axis,f1,n,parse_fail_rate
+polyguard,en,response,0.7392,1689,0.0
+polyguard,en,prompt,0.8729,,
+llamaguard,en,response,0.453,1689,0.0
+llamaguard,en,prompt,0.7478,,
+sguard,en,response,0.7957,1689,0.0
+sguard,en,prompt,0.8877,,
+polyguard,ko,response,0.6333,1674,0.0089
+polyguard,ko,prompt,0.8158,,
+llamaguard,ko,response,0.3669,1688,0.0006
+llamaguard,ko,prompt,0.5693,,
+sguard,ko,response,0.4748,1689,0.0
+sguard,ko,prompt,0.7538,,
