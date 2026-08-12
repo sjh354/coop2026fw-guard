@@ -69,6 +69,57 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag="", probe_file
     print(f"saved: {out_path}")
 
 
+def run_eval_multilingual(model_name, batch_size, max_new_tokens, tag="", data_file="data/multilingual_base.csv"):
+    df_in = pd.read_csv(data_file)
+
+    tok, model = load(MODEL_IDS[model_name])
+    tok.padding_side = "left"
+    if tok.pad_token is None:
+        tok.pad_token = tok.eos_token
+
+    label_map = {"harmful": "unsafe", "unharmful": "safe"}
+    rows = []
+    for start in range(0, len(df_in), batch_size):
+        batch = df_in.iloc[start : start + batch_size]
+        texts = [build_prompt_text(tok, model_name, p) for p in batch["text"]]
+        pred_labels, raw_outputs, confidences = generate_batch(model_name, tok, model, texts, max_new_tokens)
+
+        for (_, r), pred, raw, conf in zip(batch.iterrows(), pred_labels, raw_outputs, confidences):
+            rows.append(
+                {
+                    "base_id": r["base_id"],
+                    "lang": r["lang"],
+                    "track": r["track"],
+                    "text": r["text"],
+                    "true_label": r["label"],
+                    "pred_label": label_map.get(pred, pred),
+                    "raw_output": raw,
+                    "confidence": conf,
+                    "source_dataset": r["source_dataset"],
+                }
+            )
+        print(f"{model_name}/multilingual: {min(start + batch_size, len(df_in))}/{len(df_in)}")
+
+    del model
+    torch.cuda.empty_cache()
+
+    df = pd.DataFrame(rows)
+    parse_fail_rate = df["pred_label"].isna().mean()
+    print(f"parse failure rate: {parse_fail_rate:.2%}")
+
+    for track in sorted(df["track"].unique()):
+        sub = df[df["track"] == track].dropna(subset=["pred_label"])
+        f1 = f1_score(sub["true_label"], sub["pred_label"], pos_label="unsafe")
+        print(f"Track {track} F1 (pos_label=unsafe, n={len(sub)}): {f1:.4f}")
+        for lang, g in sub.groupby("lang"):
+            lang_f1 = f1_score(g["true_label"], g["pred_label"], pos_label="unsafe") if g["true_label"].nunique() > 1 else float("nan")
+            print(f"  {lang}: n={len(g)} F1={lang_f1:.4f}")
+
+    out_path = f"results/multilingual_{model_name}{tag}.csv"
+    df.to_csv(out_path, index=False)
+    print(f"saved: {out_path}")
+
+
 def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens, tag=""):
     ds = load_dataset("ToxicityPrompts/PolyGuardPrompts", split="test")
     ds = ds.filter(lambda x: x["language"] == LANG_NAMES[lang] and x["prompt_harm_label"] is not None)
@@ -121,6 +172,7 @@ if __name__ == "__main__":
     parser.add_argument("--lang", choices=LANG_NAMES.keys())
     parser.add_argument("--ko-probe", action="store_true", help="data/ko_probe.csv로 flip rate 평가 (Phase 5)")
     parser.add_argument("--probe-file", default="data/ko_probe.csv", help="--ko-probe 사용 시 입력 CSV 경로 (예: data/en_probe.csv)")
+    parser.add_argument("--multilingual", action="store_true", help="data/multilingual_base.csv(Track A/B)로 7개 언어 평가")
     parser.add_argument("--n", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=64)
@@ -129,6 +181,8 @@ if __name__ == "__main__":
     if args.ko_probe:
         out_prefix = Path(args.probe_file).stem
         run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens, args.tag, args.probe_file, out_prefix)
+    elif args.multilingual:
+        run_eval_multilingual(args.model, args.batch_size, args.max_new_tokens, args.tag)
     else:
         if not args.lang:
             parser.error("--lang은 --ko-probe가 아닐 때 필수")
