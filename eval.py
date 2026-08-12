@@ -18,7 +18,7 @@ MODEL_IDS = {
 LANG_NAMES = {"en": "English", "ko": "Korean"}
 
 
-def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
+def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag=""):
     df_in = pd.read_csv("data/ko_probe.csv")
 
     tok, model = load(MODEL_IDS[model_name])
@@ -63,7 +63,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
     print("variant_type별 flip rate (원문 예측 대비):")
     print(flip_rate.to_string())
 
-    out_path = f"results/ko_probe_{model_name}.csv"
+    out_path = f"results/ko_probe_{model_name}{tag}.csv"
     df.to_csv(out_path, index=False)
     print(f"saved: {out_path}")
 
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument("--tag", default="", help="출력 파일명에 붙일 접미사, 예: _conf (기존 결과 덮어쓰지 않기 위함)")
     args = parser.parse_args()
     if args.ko_probe:
-        run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens)
+        run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens, args.tag)
     else:
         if not args.lang:
             parser.error("--lang은 --ko-probe가 아닐 때 필수")
