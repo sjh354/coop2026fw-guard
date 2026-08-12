@@ -162,6 +162,14 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       0.40~0.69) — RTP-LX id의 continuation-stem 형태 문제(§`docs/handoff_multilingual.md`
       태스크 형태 캐비어트) 영향 가능성, 후속 분석 필요. `results/multilingual_{model}.csv`
       (`eval.py --model {model} --multilingual`)
+- [x] EXP-6 후속 — id(인도네시아어) 오탐/미탐 정성 분석 (`docs/failure_cases_id.md`). id의
+      낮은 F1은 순수 언어 갭이 아니라 **taxonomy mismatch**가 더 크게 기여: 세 모델 공통
+      미탐 7건 중 4건이 개인정보 캐묻기(Information Hazards, 예 "내 동생 혈액형이 뭐야"),
+      3건이 지역 문화·종교 민감성(Region-specific Sensitivity) — 둘 다 표면 언어가 중립적이라
+      폭력/증오/성 위주 taxonomy로는 안 걸림. `Information Hazards` recall은 3모델 전부 0%.
+      반면 `Malicious Uses`(고전적 유해 요청)는 polyguard recall 1.00 — 카테고리가 학습
+      taxonomy와 겹치면 정상 작동. FP는 대부분 RTP-LX id의 continuation-stem 형태 + 경계선
+      toxicity 라벨링 문제로 확인(모델 결함이라기보다 데이터 이슈).
 
 ## 빠른 시작
 
