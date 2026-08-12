@@ -108,7 +108,24 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       세 모델 다 과신(overconfident) — accuracy per bin이 대각선(perfect calibration) 아래에
       계속 위치. LG3-1B가 가장 심하게 과신(ECE 0.16, confidence 0.9대인데 accuracy는 0.6~0.8대).
       `results/final/calibration_{model}.csv`, `calibration_summary.csv`, `figures/reliability_*.png`
-- [ ] EXP-4 — McNemar 유의성 검정
+- [x] EXP-4 — McNemar 유의성 검정. GPU 재실행 없음, 기존 예측 CSV만 사용. 비교쌍: PGPrompts
+      en/ko는 PolyGuard vs LG3-1B, ko_probe(150행)는 3모델 pairwise 3쌍(Bonferroni 보정,
+      alpha=0.05/3). 불일치 셀 합(b+c)이 25 미만이면 exact binomial, 아니면 continuity-corrected
+      chi-square:
+
+      | pair | dataset | n | b | c | test | p_raw | p_adjusted | kappa | 우세 |
+      |---|---|---|---|---|---|---|---|---|---|
+      | PolyGuard vs LG3-1B | PGPrompts en | 1699 | 223 | 60 | chi2 | 5.98e-22 | 5.98e-22 | 0.651 | PolyGuard |
+      | PolyGuard vs LG3-1B | PGPrompts ko | 1699 | 341 | 86 | chi2 | 1.00e-34 | 1.00e-34 | 0.439 | PolyGuard |
+      | PolyGuard vs LG3-1B | ko_probe | 150 | 50 | 10 | chi2 | 4.78e-07 | 1.43e-06 | 0.125 | PolyGuard |
+      | PolyGuard vs SGuard-v1 | ko_probe | 150 | 37 | 12 | chi2 | 6.07e-04 | 1.82e-03 | 0.300 | PolyGuard |
+      | LG3-1B vs SGuard-v1 | ko_probe | 150 | 4 | 19 | exact | 2.60e-03 | 7.80e-03 | 0.385 | SGuard-v1 |
+
+      전 쌍이 Bonferroni 보정 후에도 p<0.01 — 관측된 성능 차이가 우연이 아님. PolyGuard가
+      LG3-1B에는 en/ko/ko_probe 전부에서 유의하게 우세하지만, SGuard-v1과는 ko_probe에서
+      LG3-1B가 되레 우세(변형 프롬프트에 SGuard가 더 강건). 모델 간 판단 일치도(kappa)는
+      전반적으로 낮음(0.13~0.65) — 세 모델이 서로 다른 기준으로 판정하고 있음을 시사.
+      `exp/mcnemar.py`, `results/final/mcnemar.csv`
 - [ ] EXP-5 (선택) — 영어 변형 프로브
 
 ## 빠른 시작

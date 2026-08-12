@@ -1,0 +1,6 @@
+pair,dataset,n,b,c,test_type,p_raw,p_adjusted,kappa,direction
+PolyGuard vs LG3-1B,PGPrompts en,1699,223,60,chi2_corrected,5.978738250182878e-22,5.978738250182878e-22,0.6508027693673057,PolyGuard 우세 (b=223 > c=60)
+PolyGuard vs LG3-1B,PGPrompts ko,1699,341,86,chi2_corrected,1.000980164024365e-34,1.000980164024365e-34,0.4385096850042065,PolyGuard 우세 (b=341 > c=86)
+PolyGuard vs LG3-1B,ko_probe,150,50,10,chi2_corrected,4.781523876094526e-07,1.4344571628283578e-06,0.12536443148688048,PolyGuard 우세 (b=50 > c=10)
+PolyGuard vs SGuard-v1,ko_probe,150,37,12,chi2_corrected,0.0006067668456360642,0.0018203005369081928,0.29986664126500284,PolyGuard 우세 (b=37 > c=12)
+LG3-1B vs SGuard-v1,ko_probe,150,4,19,exact,0.002599477767944336,0.007798433303833008,0.38502673796791437,SGuard-v1 우세 (c=19 > b=4)
