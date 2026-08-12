@@ -14,8 +14,11 @@ guard-lab/
 ├── eval.py        # PGPrompts 서브셋 평가 → CSV
 ├── app.py         # FastAPI 서빙
 ├── docs/
-│   └── PLAN.md    # Phase 0~7 전체 계획
-└── results/       # {model}_{lang}.csv 평가 결과
+│   ├── PLAN.md      # Phase 0~7 전체 계획
+│   └── NEW_PLAN.md  # 잔여 실험 EXP-1~5 지시문
+├── exp/           # EXP-1~5 실험별 단일 스크립트
+├── results/       # {model}_{lang}.csv 평가 결과
+└── results/final/ # EXP-1~5 산출물 CSV + .meta.json
 ```
 
 ## 진행 상태
@@ -56,6 +59,21 @@ guard-lab/
 Phase 5~7은 정량 재현이 아니라 정성 분석 축이다. 세 번째 비교 모델로 SGuard-v1(한국어 특화,
 confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md` Phase 5~7, 실패 사례는
 `docs/failure_cases.md` 참고.
+
+### 잔여 실험 (`docs/NEW_PLAN.md`)
+
+발표 전 추가 실험 5건(EXP-1~5), 진행 상태:
+
+- [x] EXP-1 — Latency 벤치마크. ko probe 원문 30 + PGPrompts en 20 = 50건 × 3모델, batch=1
+      순차 측정(`torch.cuda.synchronize()` 전후 호출, warmup 5회 제외). median/p95:
+      LG3-1B 46.6/89.4ms, PolyGuard 677.2/722.2ms, SGuard 297.7/299.3ms. 출력 토큰 수 차이가
+      커서(3.18 vs 31.6 vs 5) `ms_per_output_token`도 병기 — LG3-1B가 절대 latency는 가장
+      빠르지만 토큰당으로는 PolyGuard가 더 느림. `exp/latency_bench.py`, `results/final/latency_raw.csv`,
+      `results/final/latency_summary.csv`
+- [ ] EXP-2 — Response harmfulness 재현
+- [ ] EXP-3 — Confidence calibration
+- [ ] EXP-4 — McNemar 유의성 검정
+- [ ] EXP-5 (선택) — 영어 변형 프로브
 
 ## 빠른 시작
 
