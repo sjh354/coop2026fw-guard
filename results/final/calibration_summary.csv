@@ -1,0 +1,4 @@
+model,ece,n_total,n_dropped_parse_fail,n_bins_low_sample
+llamaguard,0.1614,3547,1,0
+polyguard,0.1017,3548,0,1
+sguard,0.1065,3548,0,0

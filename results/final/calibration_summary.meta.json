@@ -1,0 +1,20 @@
+{
+  "n_bins": 10,
+  "bin_range": [
+    0.5,
+    1.0
+  ],
+  "min_bin_n": 30,
+  "sources": [
+    "en",
+    "ko",
+    "ko_probe"
+  ],
+  "confidence_definition": {
+    "llamaguard": "safe/unsafe 결정 토큰 2개 후보 softmax max",
+    "polyguard": "yes/no 결정 토큰 2개 후보 softmax max",
+    "sguard": "5카테고리 네이티브 확률 — triggered 카테고리 중 max, 전부 safe면 min (타 모델과 정의 다름)"
+  },
+  "date": "2026-08-12T01:15:28.574718+00:00",
+  "git_commit": "80dcb88b780d05a73d7f4096ee469e0f73b10761"
+}
