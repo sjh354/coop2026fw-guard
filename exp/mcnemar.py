@@ -1,10 +1,10 @@
 # EXP-4: McNemar 유의성 검정 (docs/NEW_PLAN.md 참고)
 # GPU 재실행 없음 — 기존 예측 CSV(results/*.csv)만 사용해 모델 쌍의 정오답 불일치를 검정한다.
 #
-# 비교쌍:
-#   1. PGPrompts en: PolyGuard vs LG3
-#   2. PGPrompts ko: PolyGuard vs LG3
-#   3. ko probe(150행): 3모델 pairwise 3쌍 (Bonferroni 보정, alpha=0.05/3)
+# 비교쌍 (D8 확장, 2026-08-12): PGPrompts en/ko/ko_probe 3개 데이터셋 각각에서 3모델 pairwise
+# 3쌍(PG-LG3, PG-SGuard, LG3-SGuard) 전부 실행. Bonferroni 보정은 데이터셋 단위로 n=3
+# (동일 데이터셋 내 3개 비교를 하나의 family로 봄) — ko_probe에 쓰던 기존 스코프를 en/ko에도
+# 동일하게 적용.
 #
 # 2x2 분할표: a=둘다 정답, b=A만 정답, c=B만 정답, d=둘다 오답.
 # mcnemar는 b+c(불일치 셀 합)가 25 미만이면 exact binomial, 그 이상이면 continuity-corrected chi-square.
@@ -92,27 +92,28 @@ def run_pair(dataset, model_a, model_b, pred_paths):
     }
 
 
+PAIRWISE = [
+    ("polyguard", "llamaguard"),
+    ("polyguard", "sguard"),
+    ("llamaguard", "sguard"),
+]
+
+
 def main():
     rows = []
 
     for lang, path_tpl in PGPROMPTS_PATHS.items():
-        rows.append(run_pair(f"PGPrompts {lang}", "polyguard", "llamaguard", path_tpl))
+        dataset_rows = [run_pair(f"PGPrompts {lang}", a, b, path_tpl) for a, b in PAIRWISE]
+        n_comparisons = len(dataset_rows)
+        for r in dataset_rows:
+            r["p_adjusted"] = min(r["p_raw"] * n_comparisons, 1.0)
+        rows.extend(dataset_rows)
 
-    ko_probe_pairs = [
-        ("polyguard", "llamaguard"),
-        ("polyguard", "sguard"),
-        ("llamaguard", "sguard"),
-    ]
-    ko_probe_rows = [run_pair("ko_probe", a, b, KO_PROBE_PATH) for a, b in ko_probe_pairs]
+    ko_probe_rows = [run_pair("ko_probe", a, b, KO_PROBE_PATH) for a, b in PAIRWISE]
     n_comparisons = len(ko_probe_rows)
     for r in ko_probe_rows:
         r["p_adjusted"] = min(r["p_raw"] * n_comparisons, 1.0)
     rows.extend(ko_probe_rows)
-
-    # PGPrompts 쌍은 단일 비교라 보정 없음(p_adjusted = p_raw)
-    for r in rows:
-        if r["p_adjusted"] is None:
-            r["p_adjusted"] = r["p_raw"]
 
     out_df = pd.DataFrame(rows)[
         ["pair", "dataset", "n", "b", "c", "test_type", "p_raw", "p_adjusted", "kappa", "direction"]
@@ -131,7 +132,7 @@ def main():
         "git_commit": commit,
         "exact_threshold": EXACT_THRESHOLD,
         "bonferroni_n": n_comparisons,
-        "bonferroni_scope": "ko_probe pairwise 3쌍만 보정 (alpha=0.05/3)",
+        "bonferroni_scope": "데이터셋(en/ko/ko_probe)별로 3모델 pairwise 3쌍을 family로 보정 (alpha=0.05/3)",
         "sources": {
             "PGPrompts en/ko": "results/{model}_{lang}.csv",
             "ko_probe": "results/ko_probe_{model}.csv",
