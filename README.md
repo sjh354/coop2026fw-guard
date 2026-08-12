@@ -90,7 +90,14 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       어려운 판정임을 시사. LG3-1B는 response 축 낙폭이 가장 커서(en 0.75→0.45) response 평가에
       특히 취약. `exp/response_harm.py`, `results/final/response_harm_{model}_{lang}.csv`,
       `results/final/harm_axis_summary.csv`
-- [ ] EXP-3 — Confidence calibration
+- [ ] EXP-3 — Confidence calibration (진행 중). 기존 예측 CSV에 logprob/confidence가 저장돼
+      있지 않아(재사용 불가 확인) `models.py`의 `moderate()` confidence 로직(safe/unsafe 결정
+      토큰 2개 softmax)을 `generate_batch()`로 확장, GPU 재실행 필요성을 보고 후 승인받아 진행.
+      PGPrompts en/ko 전량(1699건×3모델) confidence 포함 재실행 완료 — `results/{model}_{lang}_conf.csv`,
+      F1은 기존 결과와 오차범위 내 일치(<1%p, 배치 패딩에 따른 부동소수 차이). **남은 작업**:
+      ko_probe(150행) confidence 재실행, ECE/reliability diagram 계산 및
+      `results/final/calibration_{model}.csv`, `calibration_summary.csv`, `figures/reliability_*.png`
+      산출(`docs/NEW_PLAN.md` EXP-3 참고)
 - [ ] EXP-4 — McNemar 유의성 검정
 - [ ] EXP-5 (선택) — 영어 변형 프로브
 
