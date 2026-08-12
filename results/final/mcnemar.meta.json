@@ -1,10 +1,10 @@
 {
   "script": "exp/mcnemar.py",
-  "generated_at": "2026-08-12T01:20:19.870088+00:00",
-  "git_commit": "d54b49f91e40203a3c1b0a938568be8659690768",
+  "generated_at": "2026-08-12T08:06:38.896626+00:00",
+  "git_commit": "8252b36f0d5fbbd7d914c6a1fc31b690b9130290",
   "exact_threshold": 25,
   "bonferroni_n": 3,
-  "bonferroni_scope": "ko_probe pairwise 3쌍만 보정 (alpha=0.05/3)",
+  "bonferroni_scope": "데이터셋(en/ko/ko_probe)별로 3모델 pairwise 3쌍을 family로 보정 (alpha=0.05/3)",
   "sources": {
     "PGPrompts en/ko": "results/{model}_{lang}.csv",
     "ko_probe": "results/ko_probe_{model}.csv"
