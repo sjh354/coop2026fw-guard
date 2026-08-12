@@ -74,9 +74,10 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
 
 ### 잔여 실험 (`docs/NEW_PLAN.md`)
 
-발표 전 추가 실험 5건(EXP-1~5) 전부 완료, **`results/final/` 동결됨** (git tag
-`presentation-freeze`, commit `4096476`). 동결 이후 수치 재생성 금지 — 문제 발견 시 발표 자료
-각주로 처리. 진행 상태:
+발표 전 추가 실험 5건(EXP-1~5) 전부 완료, `results/final/`은 최초 `presentation-freeze`
+태그(commit `4096476`)로 동결됐었으나 **2026-08-12 사용자 승인으로 동결 해제 후 D6/D8/D9
+관련 결과 갱신**(EXP-7, 아래 참고) — 이 시점 이후 `results/final/`을 인용할 때는 갱신본
+기준. 진행 상태:
 
 - [x] EXP-1 — Latency 벤치마크. ko probe 원문 30 + PGPrompts en 20 = 50건 × 3모델, batch=1
       순차 측정(`torch.cuda.synchronize()` 전후 호출, warmup 5회 제외). median/p95:
@@ -170,6 +171,18 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       반면 `Malicious Uses`(고전적 유해 요청)는 polyguard recall 1.00 — 카테고리가 학습
       taxonomy와 겹치면 정상 작동. FP는 대부분 RTP-LX id의 continuation-stem 형태 + 경계선
       toxicity 라벨링 문제로 확인(모델 결함이라기보다 데이터 이슈).
+- [x] EXP-7 — 발표 자료 집계(`results_summary.md`) 중 발견된 결손 보강. `results/final/`
+      동결 해제(§잔여 실험 상단 참고) 후: (1) McNemar를 PGPrompts en/ko에도 3모델 pairwise
+      3쌍 전부로 확장 — **PolyGuard vs SGuard-v1이 PGPrompts en에서 Bonferroni 보정 후
+      유의하지 않음**(p_adjusted=0.124) 발견, LG3 vs SGuard는 en/ko/ko_probe 전부 SGuard
+      우세로 일관. (2) GPU 모델명(RTX 3090) 확인. (3) 7개 언어(es/hi/ar/ru/th/vi/id)
+      variant flip rate 신규 생성 — 우회표기/띄어쓰기/번역투/code-switching을 문자 체계별
+      규칙(Latin leetspeak, Cyrillic homoglyph, Arabic tatweel, Devanagari ZWJ, Thai ZWSP)
+      + Google Translate 왕복번역으로 만듦(**원어민 미검증**, `exp/multilingual_variants.py`).
+      태국어 code-switching은 띄어쓰기 부재로 56.7%가 no-op. (4) Track A 5개 언어(es/hi/th/ar/ru)
+      response harmfulness 추가 — en/ko와 동일하게 response F1 < prompt F1 패턴 재확인,
+      llamaguard는 ar/es에서 response F1 0.0으로 다국어에서 낙폭이 더 극단적. 상세는
+      `results_summary.md`, `docs/journal/2026-08-12.md` 참고.
 
 ## 빠른 시작
 
