@@ -120,9 +120,18 @@ if __name__ == "__main__":
         ds, excl = load_examples(lang)
         exclusion_meta[lang] = excl
         for model_name in MODEL_IDS:
-            rows = run_model_lang(model_name, lang, ds)
+            out_path = f"results/final/response_harm_{model_name}_{lang}.csv"
             fieldnames = ["id", "text", "response", "pred", "label", "raw_output"]
-            write_csv(f"results/final/response_harm_{model_name}_{lang}.csv", rows, fieldnames)
+            if os.path.exists(out_path):
+                # OOM으로 중단됐다 재개하는 경우 이미 끝난 model/lang은 재실행하지 않고 기존 CSV 재사용
+                print(f"{model_name}/{lang}: 기존 결과 재사용 ({out_path})")
+                with open(out_path, newline="") as f:
+                    rows = list(csv.DictReader(f))
+                for r in rows:
+                    r["pred"] = r["pred"] or None
+            else:
+                rows = run_model_lang(model_name, lang, ds)
+                write_csv(out_path, rows, fieldnames)
 
             f1, fail_rate, valid, fail = score(rows)
             print(f"{model_name}/{lang}: n={len(rows)} parse_fail_rate={fail_rate:.2%} f1={f1}")

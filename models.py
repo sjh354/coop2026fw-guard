@@ -235,8 +235,13 @@ def generate_batch(model_name, tok, model, texts, max_new_tokens, target="prompt
     """배치 생성 + harmfulness 파싱까지 한 번에. target="prompt"|"response"로 어느 축을 파싱할지
     선택(sguard는 5카테고리 집계 하나뿐이라 target 무관). sguard는 5카테고리 중 하나라도
     unsafe면 'harmful'로 정규화(나머지 두 모델과 같은 이진 축으로 맞추기 위함).
-    반환: (pred_label 리스트, raw_output 문자열 리스트)."""
-    inputs = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
+    반환: (pred_label 리스트, raw_output 문자열 리스트).
+    max_length=2048 truncation: PGPrompts response 축에 40k+ 토큰짜리 극단 이상치가 섞여 있어
+    (EXP-2 OOM으로 발견) attention 메모리가 배치 크기에 비례해 터진다. p99가 en 1321/ko 1965로
+    2048 아래라 잘리는 샘플은 극소수(<1%)."""
+    inputs = tok(
+        texts, return_tensors="pt", padding=True, truncation=True, max_length=2048, add_special_tokens=False
+    ).to(model.device)
 
     if model_name == "sguard":
         category_ids = sguard_category_ids(tok)
