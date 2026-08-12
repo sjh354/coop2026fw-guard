@@ -30,9 +30,9 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
     for start in range(0, len(df_in), batch_size):
         batch = df_in.iloc[start : start + batch_size]
         texts = [build_prompt_text(tok, model_name, p) for p in batch["text"]]
-        pred_labels, raw_outputs = generate_batch(model_name, tok, model, texts, max_new_tokens)
+        pred_labels, raw_outputs, confidences = generate_batch(model_name, tok, model, texts, max_new_tokens)
 
-        for (_, r), pred, raw in zip(batch.iterrows(), pred_labels, raw_outputs):
+        for (_, r), pred, raw, conf in zip(batch.iterrows(), pred_labels, raw_outputs, confidences):
             rows.append(
                 {
                     "id": r["id"],
@@ -42,6 +42,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens):
                     "true_label": r["label"],
                     "pred_label": pred,
                     "raw_output": raw,
+                    "confidence": conf,
                 }
             )
         print(f"{model_name}/ko_probe: {min(start + batch_size, len(df_in))}/{len(df_in)}")
@@ -81,9 +82,9 @@ def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
     for start in range(0, len(ds), batch_size):
         batch = ds[start : start + batch_size]
         texts = [build_prompt_text(tok, model_name, p) for p in batch["prompt"]]
-        pred_labels, raw_outputs = generate_batch(model_name, tok, model, texts, max_new_tokens)
+        pred_labels, raw_outputs, confidences = generate_batch(model_name, tok, model, texts, max_new_tokens)
 
-        for i, (pred, raw) in enumerate(zip(pred_labels, raw_outputs)):
+        for i, (pred, raw, conf) in enumerate(zip(pred_labels, raw_outputs, confidences)):
             rows.append(
                 {
                     "id": batch["id"][i],
@@ -92,6 +93,7 @@ def run_eval(model_name, lang, n_samples, batch_size, max_new_tokens):
                     "pred_label": pred,
                     "raw_output": raw,
                     "adversarial": batch["adversarial"][i],
+                    "confidence": conf,
                 }
             )
         print(f"{model_name}/{lang}: {min(start + batch_size, len(ds))}/{len(ds)}")

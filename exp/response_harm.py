@@ -68,7 +68,7 @@ def run_model_lang(model_name, lang, ds):
         texts = [
             build_prompt_text(tok, model_name, p, r) for p, r in zip(batch["prompt"], batch["response"])
         ]
-        pred_labels, raw_outputs = generate_batch(model_name, tok, model, texts, MAX_NEW_TOKENS, target="response")
+        pred_labels, raw_outputs, _ = generate_batch(model_name, tok, model, texts, MAX_NEW_TOKENS, target="response")
 
         for i, (pred, raw) in enumerate(zip(pred_labels, raw_outputs)):
             rows.append(

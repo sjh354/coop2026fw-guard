@@ -235,7 +235,11 @@ def generate_batch(model_name, tok, model, texts, max_new_tokens, target="prompt
     """배치 생성 + harmfulness 파싱까지 한 번에. target="prompt"|"response"로 어느 축을 파싱할지
     선택(sguard는 5카테고리 집계 하나뿐이라 target 무관). sguard는 5카테고리 중 하나라도
     unsafe면 'harmful'로 정규화(나머지 두 모델과 같은 이진 축으로 맞추기 위함).
-    반환: (pred_label 리스트, raw_output 문자열 리스트).
+    반환: (pred_label 리스트, raw_output 문자열 리스트, confidence 리스트).
+    confidence는 moderate()와 동일하게 safe/unsafe(혹은 yes/no) 결정 토큰 위치의 logit을 두 후보로만
+    softmax한 값(EXP-3, confidence calibration용). llamaguard/polyguard는 생성 토큰 중 처음 등장하는
+    후보 토큰 기준이라 target="response"에서는 "Harmful request" 줄이 먼저 나오는 polyguard 출력 특성상
+    prompt 축 confidence를 줍는다 — 현재 eval.py는 항상 target="prompt"로만 호출해서 문제 없음.
     max_length=2048 truncation: PGPrompts response 축에 40k+ 토큰짜리 극단 이상치가 섞여 있어
     (EXP-2 OOM으로 발견) attention 메모리가 배치 크기에 비례해 터진다. p99가 en 1321/ko 1965로
     2048 아래라 잘리는 샘플은 극소수(<1%)."""
@@ -254,23 +258,57 @@ def generate_batch(model_name, tok, model, texts, max_new_tokens, target="prompt
                 return_dict_in_generate=True,
                 output_logits=True,
             )
-        pred_labels, raw_outputs = [], []
+        pred_labels, raw_outputs, confidences = [], [], []
         for b in range(inputs["input_ids"].shape[0]):
-            cat_status = {}
+            cat_status, cat_conf = {}, {}
             for i, (safe_id, unsafe_id) in enumerate(category_ids):
                 step_logits = out.logits[i][b]
                 probs = torch.softmax(step_logits[[safe_id, unsafe_id]], dim=0)
                 cat_status[SGUARD_CATEGORY_NAMES[i]] = "unsafe" if probs[1] >= 0.5 else "safe"
+                cat_conf[SGUARD_CATEGORY_NAMES[i]] = probs.max().item()
             pred_labels.append("harmful" if "unsafe" in cat_status.values() else "unharmful")
             raw_outputs.append(", ".join(f"{k}:{v}" for k, v in cat_status.items()))
-        return pred_labels, raw_outputs
+            triggered = [k for k, v in cat_status.items() if v == "unsafe"]
+            confidence = max(cat_conf[k] for k in triggered) if triggered else min(cat_conf.values())
+            confidences.append(round(confidence, 4))
+        return pred_labels, raw_outputs, confidences
+
+    if model_name == "llamaguard":
+        label_ids = {
+            tok.encode("safe", add_special_tokens=False)[-1]: "safe",
+            tok.encode("unsafe", add_special_tokens=False)[-1]: "unsafe",
+        }
+    elif model_name == "polyguard":
+        label_ids = {
+            tok.encode(" no", add_special_tokens=False)[-1]: "safe",
+            tok.encode(" yes", add_special_tokens=False)[-1]: "unsafe",
+        }
+    else:
+        raise ValueError(f"unknown model_name: {model_name}")
+    candidate_ids = list(label_ids.keys())
 
     with torch.no_grad():
         out = model.generate(
-            **inputs, max_new_tokens=max_new_tokens, do_sample=False, pad_token_id=tok.pad_token_id
+            **inputs,
+            max_new_tokens=max_new_tokens,
+            do_sample=False,
+            pad_token_id=tok.pad_token_id,
+            return_dict_in_generate=True,
+            output_scores=True,
         )
-    gen = out[:, inputs["input_ids"].shape[-1] :]
+    gen = out.sequences[:, inputs["input_ids"].shape[-1] :]
     raw_outputs = tok.batch_decode(gen, skip_special_tokens=True)
     parse_fn = parse_prompt_harm if target == "prompt" else parse_response_harm
     pred_labels = [parse_fn(model_name, r) for r in raw_outputs]
-    return pred_labels, raw_outputs
+
+    confidences = []
+    for b in range(gen.shape[0]):
+        confidence = None
+        for step in range(gen.shape[1]):
+            tid = gen[b, step].item()
+            if tid in label_ids:
+                probs = torch.softmax(out.scores[step][b][candidate_ids], dim=0)
+                confidence = probs[candidate_ids.index(tid)].item()
+                break
+        confidences.append(round(confidence, 4) if confidence is not None else None)
+    return pred_labels, raw_outputs, confidences
