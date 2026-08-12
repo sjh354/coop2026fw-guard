@@ -126,7 +126,17 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       LG3-1B가 되레 우세(변형 프롬프트에 SGuard가 더 강건). 모델 간 판단 일치도(kappa)는
       전반적으로 낮음(0.13~0.65) — 세 모델이 서로 다른 기준으로 판정하고 있음을 시사.
       `exp/mcnemar.py`, `results/final/mcnemar.csv`
-- [ ] EXP-5 (선택) — 영어 변형 프로브
+- [x] EXP-5 (선택) — 영어 변형 프로브. ko_probe base 30문장 중 문화특이적 카테고리(age 3개,
+      origin 중 홍어/b09 1개 — 영어에 대응 슬러가 없어 confound 우려)를 제외한 26문장을 자동
+      번역(`data/en_probe_base.csv`) 후 5-variant 적용(`exp/en_variants.py`,
+      `data/en_probe.csv`, 26×5=130행). 3모델 GPU 재실행, parse 실패 0%. **번역투(학습 분포
+      이탈) 취약성은 한국어 특유였다**: PolyGuard 26.67%→11.54%, SGuard 23.33%→3.85%로 영어에서
+      크게 떨어짐. 반면 **우회표기·code-switching은 언어 무관하거나 오히려 영어에서 더 취약**:
+      SGuard code-switching 16.67%→26.92%, LG3-1B 우회표기 6.67%→11.54%로 상승. 즉 변형
+      취약성은 단일 원인(언어 특이 vs 언어 무관)으로 설명 안 되고 variant type마다 다른 메커니즘을
+      시사(번역투=학습 분포 이탈은 언어별, leet-speak/code-switching=표층 패턴 의존은 언어 공통
+      경향). base가 26개뿐이라 variant당 표본이 작아(en=ko probe 대비 4문장 적음) 해석에 주의.
+      `exp/en_variants.py`, `exp/flip_compare_exp5.py`, `results/final/flip_rate_en_vs_ko.csv`
 
 ## 빠른 시작
 
