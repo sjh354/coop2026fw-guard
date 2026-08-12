@@ -150,6 +150,18 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       시사(번역투=학습 분포 이탈은 언어별, leet-speak/code-switching=표층 패턴 의존은 언어 공통
       경향). base가 26개뿐이라 variant당 표본이 작아(en=ko probe 대비 4문장 적음) 해석에 주의.
       `exp/en_variants.py`, `exp/flip_compare_exp5.py`, `results/final/flip_rate_en_vs_ko.csv`
+- [x] EXP-6 — 다국어(7개 언어) Track A/B 평가. `data/multilingual_base.csv`(360행) 3모델
+      실행, parse 실패 0%. **Track A**(PG 홈그라운드 5개 언어, 순위 금지, n=150) F1:
+      llamaguard 0.4789 / polyguard 0.7701 / sguard 0.8398. **Track B**(OOD 공정 비교
+      7개 언어, 순위 메인, n=210) F1: llamaguard 0.6696 / polyguard 0.7939 / sguard 0.7815.
+      **예상과 반대되는 결과**: PolyGuard가 자기 이름을 딴 데이터(Track A)에서 유리할
+      것이라는 우려(`docs/handoff_multilingual.md` §Track A/B 재설계 배경)와 달리, llamaguard는
+      오히려 Track A에서 더 낮고(0.48→0.67, +0.19p) polyguard는 두 트랙에서 거의 동일(0.77→0.79,
+      +0.02p) — PG 데이터 자체가 특별히 유리하게 작용하지 않음. sguard만 A>B(0.84→0.78, -0.06p)로
+      약한 홈 이점을 보임. Track B 언어별로는 세 모델 다 id(인도네시아어)에서 가장 약함(F1
+      0.40~0.69) — RTP-LX id의 continuation-stem 형태 문제(§`docs/handoff_multilingual.md`
+      태스크 형태 캐비어트) 영향 가능성, 후속 분석 필요. `results/multilingual_{model}.csv`
+      (`eval.py --model {model} --multilingual`)
 
 ## 빠른 시작
 
