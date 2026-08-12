@@ -16,12 +16,22 @@ guard-lab/
 ├── docs/
 │   ├── PLAN.md      # Phase 0~7 전체 계획
 │   ├── NEW_PLAN.md  # 잔여 실험 EXP-1~5 지시문
+│   ├── handoff_multilingual.md  # 7개 언어 확장 데이터셋 추출 지시서 + 실행 결과
 │   └── results_summary.html  # 발표용 EXP-1~5 결과 요약 (단일 HTML, 브라우저로 열기)
-├── exp/           # EXP-1~5 실험별 단일 스크립트
+├── exp/           # EXP-1~5 실험별 단일 스크립트 + extract_multilingual_base.py
+├── data/          # ko_probe / en_probe / multilingual_base.csv (base + variant 문장)
+│   └── multilingual_base.csv: Track A(PG 홈그라운드, es/hi/th/ar/ru, 순위 금지) +
+│     Track B(OOD 공정 비교, 7개 언어, 순위 메인) — `track` 컬럼으로 구분, 상세는
+│     docs/handoff_multilingual.md
 ├── results/       # {model}_{lang}.csv 평가 결과 (+ _conf.csv: confidence 포함 버전)
 ├── results/final/ # EXP-1~5 산출물 CSV + .meta.json
 └── figures/       # EXP-3 reliability diagram 등 plot 산출물
 ```
+
+로컬에서 다국어 데이터 추출만 할 때는 GPU가 필요 없어 `guard` conda env 대신 `.venv`
+(homebrew python 3.14 + pandas/datasets/huggingface_hub)를 씀 — `python3 -m venv .venv &&
+.venv/bin/pip install pandas datasets pyarrow huggingface_hub`. `guard` env(3.11)와는 버전이
+다르니 모델 추론이 필요한 작업(eval.py/app.py)은 반드시 서버의 `guard` env를 쓴다.
 
 ## 진행 상태
 

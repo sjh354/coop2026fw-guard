@@ -9,6 +9,7 @@ venv/
 
 # HF cache / model weights (재다운로드 가능, 용량 큼)
 hf_cache/
+.cache/
 *.safetensors
 *.bin
 *.gguf
