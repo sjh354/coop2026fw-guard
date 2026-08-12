@@ -98,11 +98,13 @@ def plot_reliability(model_name, bins_df, df, ece, path):
     ax1.set_title(f"{model_name} reliability diagram (ECE={ece:.4f}, n={len(df)})")
     ax1.legend(loc="upper left", fontsize=8)
 
-    caption = "회색 bin = 샘플 30개 미만(과해석 주의)."
+    # 서버에 Hangul 폰트가 없어(fc-list 확인) matplotlib DejaVu Sans가 한글 glyph를 못 그린다.
+    # 캡션만 영어로 둔다 — CSV/문서는 그대로 한국어.
+    caption = "Gray bins = n < 30 (low-confidence, avoid over-interpreting)."
     if model_name == "sguard":
         caption += (
-            "\nSGuard confidence는 LG3/PolyGuard(결정 토큰 2-way softmax)와 달리\n"
-            "5카테고리 네이티브 확률(triggered면 max, 전부 safe면 min) — 정의가 다름."
+            "\nSGuard confidence differs from LG3/PolyGuard (2-way token softmax):\n"
+            "native 5-category probability (max over triggered, else min)."
         )
     ax1.text(0.02, 0.02, caption, transform=ax1.transAxes, fontsize=7, va="bottom", color="#444444")
 
