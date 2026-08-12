@@ -2,6 +2,7 @@
 # Phase 3 재현 (PLAN.md Phase 3 참고). 지표는 sklearn f1_score(pos_label='harmful') 하나.
 
 import argparse
+from pathlib import Path
 
 import pandas as pd
 import torch
@@ -18,8 +19,8 @@ MODEL_IDS = {
 LANG_NAMES = {"en": "English", "ko": "Korean"}
 
 
-def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag=""):
-    df_in = pd.read_csv("data/ko_probe.csv")
+def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag="", probe_file="data/ko_probe.csv", out_prefix="ko_probe"):
+    df_in = pd.read_csv(probe_file)
 
     tok, model = load(MODEL_IDS[model_name])
     tok.padding_side = "left"
@@ -45,7 +46,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag=""):
                     "confidence": conf,
                 }
             )
-        print(f"{model_name}/ko_probe: {min(start + batch_size, len(df_in))}/{len(df_in)}")
+        print(f"{model_name}/{out_prefix}: {min(start + batch_size, len(df_in))}/{len(df_in)}")
 
     del model
     torch.cuda.empty_cache()
@@ -63,7 +64,7 @@ def run_eval_ko_probe(model_name, batch_size, max_new_tokens, tag=""):
     print("variant_type별 flip rate (원문 예측 대비):")
     print(flip_rate.to_string())
 
-    out_path = f"results/ko_probe_{model_name}{tag}.csv"
+    out_path = f"results/{out_prefix}_{model_name}{tag}.csv"
     df.to_csv(out_path, index=False)
     print(f"saved: {out_path}")
 
@@ -119,13 +120,15 @@ if __name__ == "__main__":
     parser.add_argument("--model", choices=MODEL_IDS.keys(), required=True)
     parser.add_argument("--lang", choices=LANG_NAMES.keys())
     parser.add_argument("--ko-probe", action="store_true", help="data/ko_probe.csv로 flip rate 평가 (Phase 5)")
+    parser.add_argument("--probe-file", default="data/ko_probe.csv", help="--ko-probe 사용 시 입력 CSV 경로 (예: data/en_probe.csv)")
     parser.add_argument("--n", type=int, default=300)
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--max-new-tokens", type=int, default=64)
     parser.add_argument("--tag", default="", help="출력 파일명에 붙일 접미사, 예: _conf (기존 결과 덮어쓰지 않기 위함)")
     args = parser.parse_args()
     if args.ko_probe:
-        run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens, args.tag)
+        out_prefix = Path(args.probe_file).stem
+        run_eval_ko_probe(args.model, args.batch_size, args.max_new_tokens, args.tag, args.probe_file, out_prefix)
     else:
         if not args.lang:
             parser.error("--lang은 --ko-probe가 아닐 때 필수")
