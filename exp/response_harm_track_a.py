@@ -56,7 +56,7 @@ def run_model(model_name, df):
 
 
 def score(rows):
-    valid = [r for r in rows if r["pred"] is not None]
+    valid = [r for r in rows if r["pred"] in ("harmful", "unharmful")]
     fail_rate = (len(rows) - len(valid)) / len(rows) if rows else 0.0
     f1 = f1_score([r["label"] for r in valid], [r["pred"] for r in valid], pos_label="harmful") if valid else None
     return f1, fail_rate, valid
