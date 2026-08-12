@@ -87,6 +87,21 @@ def parse_prompt_harm(model_name, raw_output):
         raise ValueError(f"unknown model_name: {model_name}")
 
 
+def parse_response_harm(model_name, raw_output):
+    """raw_output에서 response harmfulness만 뽑아 'harmful'/'unharmful'로 정규화. 실패 시 None.
+    llamaguard는 user+assistant 두 턴을 넣으면 chat template이 자동으로 Agent(응답) 평가 모드로
+    전환되므로(EXP-2 스모크 테스트로 확인) parse_prompt_harm과 동일한 첫 줄 safe/unsafe 파서를 그대로 쓴다."""
+    if model_name == "llamaguard":
+        return parse_prompt_harm(model_name, raw_output)
+    elif model_name == "polyguard":
+        m = re.search(r"Harmful response:\s*(yes|no)", raw_output, re.IGNORECASE)
+        if not m:
+            return None
+        return "harmful" if m.group(1).lower() == "yes" else "unharmful"
+    else:
+        raise ValueError(f"unknown model_name: {model_name}")
+
+
 # Phase 7 demo 스키마(risk/category/confidence/reason)용 카테고리 → 한국어 사유 템플릿.
 # 실제 모델이 생성한 설명이 아니라 카테고리 코드에 고정 매핑한 문장이다 — 데모/발표에서
 # "reason은 모델 근거가 아니라 템플릿"이라는 점을 반드시 같이 밝힐 것 (PLAN.md Phase 7 참고).
@@ -216,8 +231,9 @@ def sguard_category_ids(tok):
     return [special_ids[i : i + 2] for i in range(0, len(special_ids), 2)]
 
 
-def generate_batch(model_name, tok, model, texts, max_new_tokens):
-    """배치 생성 + prompt harmfulness 파싱까지 한 번에. sguard는 5카테고리 중 하나라도
+def generate_batch(model_name, tok, model, texts, max_new_tokens, target="prompt"):
+    """배치 생성 + harmfulness 파싱까지 한 번에. target="prompt"|"response"로 어느 축을 파싱할지
+    선택(sguard는 5카테고리 집계 하나뿐이라 target 무관). sguard는 5카테고리 중 하나라도
     unsafe면 'harmful'로 정규화(나머지 두 모델과 같은 이진 축으로 맞추기 위함).
     반환: (pred_label 리스트, raw_output 문자열 리스트)."""
     inputs = tok(texts, return_tensors="pt", padding=True, add_special_tokens=False).to(model.device)
@@ -250,5 +266,6 @@ def generate_batch(model_name, tok, model, texts, max_new_tokens):
         )
     gen = out[:, inputs["input_ids"].shape[-1] :]
     raw_outputs = tok.batch_decode(gen, skip_special_tokens=True)
-    pred_labels = [parse_prompt_harm(model_name, r) for r in raw_outputs]
+    parse_fn = parse_prompt_harm if target == "prompt" else parse_response_harm
+    pred_labels = [parse_fn(model_name, r) for r in raw_outputs]
     return pred_labels, raw_outputs
