@@ -1,0 +1,7 @@
+{
+  "script": "exp/multilingual_variants.py + eval.py --multilingual-variants + exp/flip_compare_multilingual.py",
+  "generated_at": "2026-08-12T08:24:36.968283+00:00",
+  "git_commit": "f5dc9999e1c518d75720403b1c183b6e5c0b61d7",
+  "note": "7개 언어(es/hi/ar/ru/th/vi/id) variant는 원어민 검증 없이 규칙기반+기계번역(Google Translate)으로 생성됨(exp/multilingual_variants.py 참고) — ko_probe/en_probe(사람이 직접 작성/검토)와 생성 방법론이 달라 flip rate 절대값을 직접 비교하지 말 것. th(태국어) code-switching은 word segmentation 부재로 대부분 no-op(원문과 동일).",
+  "baseline_source": "results/multilingual_{model}.csv (track B, EXP-6 기존 예측 재사용, 재실행 안 함)"
+}

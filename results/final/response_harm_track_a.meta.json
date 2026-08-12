@@ -1,0 +1,15 @@
+{
+  "models": {
+    "polyguard": "ToxicityPrompts/PolyGuard-Qwen-Smol",
+    "llamaguard": "meta-llama/Llama-Guard-3-1B",
+    "sguard": "SamsungSDS-Research/SGuard-ContentFilter-2B-v1"
+  },
+  "dataset": "ToxicityPrompts/PolyGuardPrompts (Track A 5개 언어, exp/extract_track_a_response.py)",
+  "label_field": "response_harm_label",
+  "dtype": "bfloat16",
+  "batch_size": 16,
+  "max_new_tokens": 64,
+  "note": "D9 확장 — Track B(7개 언어 중 id 등)는 response 텍스트가 있는 소스가 없어 구조적으로 불가, Track A만 가능해 진행. en/ko response_harm.py 파이프라인과 별도(그쪽은 동결 대상 아님, 이번에 en/ko도 함께 갱신).",
+  "date": "2026-08-12T08:27:30.510672+00:00",
+  "git_commit": "259a70e948beecb775aed61bafcc5d0ce5bf528d"
+}
