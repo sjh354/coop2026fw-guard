@@ -196,11 +196,13 @@ EXP-5(ko/en) 결론과 방향이 일치. 단, 방법론이 달라(위 caveat) �
 
 ---
 
-## D5. 실패 케이스 (모델당 미탐 1건 + 오탐 1건, 6건)
+## D5. 실패 케이스 (모델당 미탐 1건 + 오탐 1건, 6건 + 다국어 12건 보강)
 
-전부 PGPrompts 한국어(ko) 실제 평가 CSV에서 발췌(EXP-6 다국어 대상 7개 언어에서는 개별
-사례 raw output 대조 작업이 수행된 적 없음 — id 언어는 카테고리 단위 정성분석만 존재,
-`docs/failure_cases_id.md`).
+**[2026-08-17 갱신]** 아래 6건은 전부 PGPrompts 한국어(ko)에서 발췌한 원본 사례. 이후
+사용자 요청으로 7개 언어 raw output을 실제로 대조해 **12건을 추가** — `docs/failure_cases_multilingual.md`
+참고(GPU 재실행 없음, 기존 `results/multilingual_{model}.csv`/`multilingual_variants_{model}.csv`
+발췌). 같은 base_id(PolyGuardPrompts 병렬 번역)가 2~3개 언어에서 동시에 실패하는 사례를
+다수 확인 — ko에서만 관찰됐던 §5(아래) 패턴이 다국어로 일반화됨.
 
 출처: `results/{model}_ko.csv` (commit `c1f60a0`, PGPrompts ko 1699건), 사례 선정은
 `docs/failure_cases.md` §4.
@@ -381,7 +383,130 @@ prompt F1의 n은 1699(PGPrompts en/ko 라벨 보유 전량, Track A는 30/언�
 
 ---
 
-## D10. 메타데이터
+## D11. 모델 × 카테고리별 FP/FN
+
+**[2026-08-17 신규]** GPU 재실행 없음 — 기존 예측 CSV의 `raw_output`(예측 카테고리 파싱)과
+로컬 HF 캐시에 이미 받아져 있던 `ToxicityPrompts/PolyGuardPrompts` parquet(id+language join,
+정답 카테고리 `prompt_categories`/`subcategory`)만 사용. 커버리지: PGPrompts en/ko(메인
+1699개) + Track A 5개 언어(정답 카테고리 존재하는 polyguard 소스) + IndoSafety(id, Track B,
+`source_label`). **제외**: MultiJail·RTP-LX 소스 샘플 — 원본에 세부 카테고리가 없음
+(harmful/harmless 이진 또는 toxicity score만 존재).
+
+출처: `results/final/category_fp_fn.csv`, `results/final/category_fp_fn.meta.json`
+(`exp/category_fp_fn.py`).
+
+**미탐(FN) — 놓친 정답 카테고리 상위 3개 (S-code, 3모델 공통)**
+
+| model | 1위 | 2위 | 3위 |
+|---|---|---|---|
+| llamaguard | S10 Hate (333건) | S2 Non-Violent Crimes (242건) | S1 Violent Crimes (119건) |
+| polyguard | S10 Hate (106건) | S2 Non-Violent Crimes (85건) | S7 Privacy (64건) |
+| sguard | S10 Hate (112건) | S2 Non-Violent Crimes (92건) | S7 Privacy (68건) |
+
+세 모델 다 **S10(Hate)이 FN 1위** — subcategory 기준으로도
+`social_stereotypes_and_unfair_discrimination`(차별/고정관념)이 3모델 전부 FN 1위
+(llamaguard 194건, polyguard 138건, sguard 129건)로 일관됨. `docs/failure_cases.md` §5의
+"완곡한 반문형 혐오 표현을 세 모델 다 놓친다"는 정성 관찰이 정량 집계로도 확인됨.
+
+**오탐(FP) — 과잉 트리거된 카테고리 상위 3개**
+
+| model | 1위 | 2위 | 3위 |
+|---|---|---|---|
+| llamaguard | S8 IP (82건) | S6 Specialized Advice (46건) | S5 Defamation (38건) |
+| polyguard | S8 IP (53건) | S2 Non-Violent Crimes (43건) | S7 Privacy (38건) |
+| sguard | Crime (58건) | Privacy (58건) | Manipulation (50건) |
+
+llamaguard/polyguard는 **S8(지식재산권)이 FP 1위** — `docs/failure_cases.md` §4의 "저작권을
+위반하지 않고" 질문(부정문 프레이밍 무시), `docs/failure_cases_multilingual.md` §F의 "사서
+역할극" 프롬프트(es/ru/hi 공통 S8 FP)가 이 수치의 구체 사례. SGuard는 자체 5카테고리
+taxonomy라 직접 비교는 안 되지만 **Crime·Privacy가 동률 1위**로 과탐지 — `docs/failure_cases.md`
+§4의 "산타/닌자거북이 주소"(Privacy 과탐지) 패턴과 일치.
+
+전체 카테고리별 원자료(모델×error_type×category, 3중 groupby)는 `results/final/category_fp_fn.csv`
+참고.
+
+---
+
+## D12. flip rate 방향 분해 (우회 성공 vs 과차단)
+
+**[2026-08-17 신규]** D4의 flip rate는 harmful→safe(우회 성공)와 safe→harmful(과차단)이
+합쳐진 수치였다. `results/multilingual_variants_{model}.csv`(variant 예측)를
+`results/multilingual_{model}.csv`(baseline 예측 + true_label)와 join해 방향을 분리했다.
+GPU 재실행 없음.
+
+출처: `results/final/flip_direction_multilingual.csv`, `results/final/flip_direction_multilingual.meta.json`
+(`exp/flip_direction_multilingual.py`). 7개 언어 × 4 variant, n=840/모델(30×7×4).
+
+| model | bypass(harmful→safe) | overblock(safe→harmful) | flip_other* | no_flip |
+|---|---:|---:|---:|---:|
+| llamaguard | 0.1488 | 0.0750 | 0.0548 | 0.7214 |
+| polyguard | 0.2119 | 0.0548 | 0.0655 | 0.6679 |
+| sguard | 0.2155 | 0.0143 | 0.0571 | 0.7131 |
+
+\* flip_other = baseline 자체가 오답이었던 셀(해석에서 제외 권장).
+
+**결론: obfuscation은 압도적으로 우회(bypass) 벡터다, 과차단(overblock) 벡터가 아니다.**
+세 모델 다 bypass rate가 overblock rate보다 2~15배 높다 — 특히 SGuard는 bypass
+0.2155 vs overblock 0.0143(**15배 차이**)로 가장 비대칭적이다. PolyGuard도 bypass가
+overblock의 약 3.9배. 이건 "표기 우회 방어가 실제로는 안전 쪽(과차단)보다 공격 쪽(탐지
+회피)에 훨씬 취약하다"는 걸 데이터로 보여준다 — D4/§results_summary.md에서 정성적으로만
+말할 수 있었던 "obfuscation은 우회 공격 벡터"라는 결론이 이제 방향 분해 수치로 뒷받침됨.
+
+언어×variant_type별 세부 breakdown은 `results/final/flip_direction_multilingual.csv` 참고
+(84셀 × 4방향).
+
+---
+
+## D13. Confidence 분포 / threshold sweep
+
+**[2026-08-17 신규]** GPU 재실행 없음 — `results/{model}_{en,ko}_conf.csv` +
+`results/multilingual_{model}.csv`에 이미 저장된 `confidence`(EXP-3 결정 토큰 softmax) 사용.
+
+출처: `results/final/confidence_distribution.csv`, `results/final/confidence_threshold_sweep.csv`,
+`results/final/confidence_threshold_sweep.meta.json` (`exp/confidence_threshold_sweep.py`).
+
+**정답/오답 confidence 분리도 (PGPrompts en/ko)**
+
+| model | lang | mean conf(정답) | mean conf(오답) | 오답 중 conf≥0.9 비율 |
+|---|---|---:|---:|---:|
+| llamaguard | en | 0.9297 | 0.8175 | 43.4% |
+| llamaguard | ko | 0.8995 | 0.8396 | 46.4% |
+| polyguard | en | 0.9850 | 0.9361 | 79.5% |
+| polyguard | ko | 0.9640 | 0.8886 | 64.0% |
+| sguard | en | 0.9818 | 0.8985 | 68.5% |
+| sguard | ko | 0.9445 | 0.8471 | 50.9% |
+
+**정답/오답 confidence가 잘 분리되지 않는다** — 특히 PolyGuard/SGuard는 en에서 오답인데도
+confidence≥0.9인 비율이 각각 79.5%/68.5%로 매우 높다. 즉 "confidence가 낮으면 2차 검사"
+전략은 PolyGuard/SGuard에서는 효과가 제한적이다(오답 대다수가 애초에 고신뢰 오답이라
+threshold를 올려도 안 걸러짐) — 반면 llamaguard는 상대적으로 분리가 나은 편(en: 정답
+0.9297 vs 오답 0.8175, 격차 0.112p로 최대).
+
+**threshold sweep (PGPrompts en/ko, confidence < threshold면 보류/미채택 가정)**
+
+| model | lang | threshold=0.9 coverage | threshold=0.9 F1 | baseline(t=0.5) F1 |
+|---|---|---:|---:|---:|
+| llamaguard | en | 70.2% | 0.8331 | 0.7478 |
+| llamaguard | ko | 61.4% | 0.6114 | 0.5698 |
+| polyguard | en | 94.1% | 0.8910 | 0.8729 |
+| polyguard | ko | 85.2% | 0.8576 | 0.8158 |
+| sguard | en | 91.9% | 0.9148 | 0.8884 |
+| sguard | ko | 76.2% | 0.8168 | 0.7492 |
+
+threshold=0.9에서 표본의 61~94%를 유지하면서 F1이 전 모델·전 언어에서 개선된다 — **임계값
+튜닝 여지가 실제로 있다**는 ECE 기반 추정(D7)이 정량 수치로 확인됨. 단, llamaguard ko는
+coverage 61.4%에서 F1이 0.57→0.61로 개선폭이 가장 작다 — 위 표에서 보듯 llamaguard ko는
+애초에 정답/오답 confidence 격차가 작아(0.06p) threshold를 올려도 어려운 오답(주로 recall
+쪽 FN, D2/D3 참고)이 잘 안 걸러지기 때문. 즉 **category별로 threshold를 다르게 주는
+제안은 PolyGuard/SGuard보다 llamaguard ko에서 효과가 작을 것으로 예상됨** — 별도 검증 필요.
+
+다국어(Track A/B) 포함 전체 sweep(7개 언어 × 3모델 × 6 threshold)은
+`results/final/confidence_threshold_sweep.csv`, 분포 전체는
+`results/final/confidence_distribution.csv` 참고.
+
+---
+
+## D14. 메타데이터
 
 | 항목 | 값 | 출처 |
 |---|---|---|
@@ -410,7 +535,7 @@ prompt F1의 n은 1699(PGPrompts en/ko 라벨 보유 전량, Track A는 30/언�
 
 ## §MISSING
 
-**[2026-08-12 갱신]** 사용자 요청으로 D4/D6/D8/D9/D10의 결손 대부분을 재실행/사후 확인으로
+**[2026-08-12 갱신]** 사용자 요청으로 D4/D6/D8/D9/D14의 결손 대부분을 재실행/사후 확인으로
 메꿈(presentation-freeze 해제, `results/final/` 덮어씀 — 아래 결정 로그 참고). 구조적으로
 불가능한 항목만 남음.
 
@@ -418,13 +543,13 @@ prompt F1의 n은 1699(PGPrompts en/ko 라벨 보유 전량, Track A는 30/언�
 |---|---|---|---|
 | D9 | Track B 7개 언어(es/hi/ar/ru/th/vi/id 중 id 포함 대부분) response harmfulness | NEVER_RUN(구조적 불가) | Aya Redteaming/MultiJail/IndoSafety/RTP-LX 전부 prompt-only 데이터셋이라 response 텍스트 자체가 없음 — response harmfulness 라벨이 있는 새 다국어 데이터셋을 별도로 소싱해야 함(예: 각 언어로 실제 LLM 응답을 생성한 뒤 사람이 라벨링하거나, response 필드가 있는 다른 벤치마크 탐색) |
 | D7 | 과신 방향의 정량값(평균 confidence − 정확도, 스칼라) | PARTIAL | `calibration_summary.csv`에는 ECE와 방향(부호)만 있고 스칼라 차이값은 미집계 — `results/final/calibration_{model}.csv`(bin별 원본)에서 `mean(confidence) - accuracy` 재계산 스크립트 추가 필요(이번 라운드에서는 진행 안 함, 범위 밖으로 유지) |
-| D10 | 정확한 실행 타임스탬프(Phase 6, D5 원본 PGPrompts en/ko 전량 실행) | PARTIAL | meta.json이 없어 git commit 시각(`c1f60a0`)으로 근사 — 정확한 실행 시작/종료 시각은 서버 실행 로그(터미널 스크롤백, 남아있지 않음)에만 있었을 가능성 |
+| D14 | 정확한 실행 타임스탬프(Phase 6, D5 원본 PGPrompts en/ko 전량 실행) | PARTIAL | meta.json이 없어 git commit 시각(`c1f60a0`)으로 근사 — 정확한 실행 시작/종료 시각은 서버 실행 로그(터미널 스크롤백, 남아있지 않음)에만 있었을 가능성 |
 | D4 | variant 생성 방법론의 원어민 검증 | PARTIAL(품질 caveat) | 7개 언어 variant는 규칙기반+Google Translate로 생성, 원어민 검토 없음(사용자 승인 하에 진행) — 발표 시 반드시 caveat 명시. 검증하려면 언어별 원어민 리뷰 세션 필요 |
 
 **해결됨(더 이상 MISSING 아님)**: D4 84셀(7언어×4variant×3모델, `exp/multilingual_variants.py`
 + GPU 재실행), D6 GPU 모델명(RTX 3090, 서버 확인), D8 PG-SGuard/LG3-SGuard의 PGPrompts en/ko
 McNemar(`exp/mcnemar.py` 확장), D9 Track A 5개 언어 response harmfulness(`exp/extract_track_a_response.py`
-+ `exp/response_harm_track_a.py`), D10 체크포인트 revision 해시(서버 HF 캐시 확인).
++ `exp/response_harm_track_a.py`), D14 체크포인트 revision 해시(서버 HF 캐시 확인).
 
 ---
 
@@ -445,8 +570,16 @@ PG-SGuard 쌍이 새로 유의하지 않다는 결과가 추가됨) — 각주 �
 84셀 신규 실행 + 12셀 en 대조군, 단 7언어분은 원어민 미검증 caveat) · D5(6/6) · D6(24/24,
 GPU 모델명 확보) · D7(3/3 ECE 확보, 방향 정량값 스칼라만 별도 미집계) · D8(9/9, 3모델
 pairwise 3쌍 × 3데이터셋 전부) · D9(21/21, en/ko 6 + Track A 5언어 15, Track B는 구조적
-불가로 요구 범위에서 제외) · D10(revision 해시 포함 핵심 항목 전부 확보, 정확한 실행
-타임스탬프 일부만 근사치).
+불가로 요구 범위에서 제외) · D11(신규, en/ko+TrackA+id 카테고리 FP/FN 집계) · D12(신규,
+84셀 flip 방향 분해) · D13(신규, en/ko+다국어 confidence threshold sweep) · D14(revision
+해시 포함 핵심 항목 전부 확보, 정확한 실행 타임스탬프 일부만 근사치).
+
+**[2026-08-17 추가]** 발표 자료 리뷰 중 나온 4가지 추가 질문(실패 사례 부족, 카테고리별
+FP/FN 없음, flip rate 방향 미분해, confidence/threshold 근거 없음)을 D5 확장 +
+D11/D12/D13 신설로 전부 메꿈 — 전부 GPU 재실행 없이 기존 `results/*.csv`와 로컬 HF 캐시
+(`ToxicityPrompts/PolyGuardPrompts` parquet)만으로 해결. 상세는 각 절 참고,
+`docs/failure_cases_multilingual.md`(D5), `results/final/category_fp_fn.csv`(D11),
+`results/final/flip_direction_multilingual.csv`(D12), `results/final/confidence_threshold_sweep.csv`(D13).
 
 **남은 결손은 전부 구조적 한계**: Track B 7개 언어 response harmfulness(원본 데이터셋에
 response 텍스트 자체가 없음), calibration 스칼라 방향값(재계산 스크립트 미작성, 범위 밖
