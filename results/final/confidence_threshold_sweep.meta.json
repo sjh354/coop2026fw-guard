@@ -1,0 +1,6 @@
+{
+  "script": "exp/confidence_threshold_sweep.py",
+  "generated_at": "2026-08-17T13:08:12.780480+00:00",
+  "git_commit": "dbe6b822ce52705b6843c3c9591b3b477e6c347a",
+  "note": "confidence = EXP-3에서 추출한 결정 토큰 softmax 값(0~1). threshold sweep은 'confidence < threshold면 사람 검토로 보류'를 가정하고 남은 표본(coverage)의 precision/recall/F1을 재계산한 것 — 실제 2차 검사 파이프라인을 구현/검증한 것은 아님."
+}
