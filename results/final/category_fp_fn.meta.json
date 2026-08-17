@@ -1,0 +1,8 @@
+{
+  "script": "exp/category_fp_fn.py",
+  "generated_at": "2026-08-17T13:06:49.976726+00:00",
+  "git_commit": "dbe6b822ce52705b6843c3c9591b3b477e6c347a",
+  "coverage": "PGPrompts en/ko(메인 1699개), Track A(es/hi/th/ar/ru, polyguard 소스), IndoSafety(id, Track B) — 정답 카테고리가 존재하는 소스만 포함.",
+  "excluded": "MultiJail·RTP-LX 소스 샘플(en/ko probe 제외 다국어 일부) — 원본에 세부 카테고리 없음(harmful/harmless 또는 toxicity score만 존재).",
+  "gt_source": "ToxicityPrompts/PolyGuardPrompts parquet (로컬 HF 캐시, id+language join), IndoSafety source_label(data/multilingual_base.csv)"
+}
