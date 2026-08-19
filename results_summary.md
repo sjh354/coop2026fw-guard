@@ -385,12 +385,19 @@ prompt F1의 n은 1699(PGPrompts en/ko 라벨 보유 전량, Track A는 30/언�
 
 ## D11. 모델 × 카테고리별 FP/FN
 
-**[2026-08-17 신규]** GPU 재실행 없음 — 기존 예측 CSV의 `raw_output`(예측 카테고리 파싱)과
-로컬 HF 캐시에 이미 받아져 있던 `ToxicityPrompts/PolyGuardPrompts` parquet(id+language join,
-정답 카테고리 `prompt_categories`/`subcategory`)만 사용. 커버리지: PGPrompts en/ko(메인
-1699개) + Track A 5개 언어(정답 카테고리 존재하는 polyguard 소스) + IndoSafety(id, Track B,
-`source_label`). **제외**: MultiJail·RTP-LX 소스 샘플 — 원본에 세부 카테고리가 없음
-(harmful/harmless 이진 또는 toxicity score만 존재).
+**[2026-08-17 신규, 2026-08-19 정정]** GPU 재실행 없음 — 기존 예측 CSV의 `raw_output`(예측
+카테고리 파싱)과 로컬 HF 캐시에 이미 받아져 있던 `ToxicityPrompts/PolyGuardPrompts`
+parquet(id+language join, 정답 카테고리 `prompt_categories`/`subcategory`)만 사용. 커버리지:
+PGPrompts en/ko(메인 1699개) + Track A 5개 언어(정답 카테고리 존재하는 polyguard 소스,
+150개) + IndoSafety(id, Track B, 20개, `source_label`) — 총 3,568행. **제외**:
+MultiJail·RTP-LX 소스 샘플 — 원본에 세부 카테고리가 없음(harmful/harmless 이진 또는
+toxicity score만 존재).
+
+**2026-08-19 정정**: `exp/category_fp_fn.py`의 Track A join이 `base_id`만으로 이뤄져 있었는데,
+`data/multilingual_base.csv`는 `base_id`가 언어별(es/hi/th/ar/ru)로 5행 중복돼 있어 Track A의
+실제 150행이 750행으로 팬아웃, 그 구간에서 나온 모든 FP/FN 카테고리 카운트가 5배 부풀어 있었다.
+`on=["base_id", "lang"]`으로 join key를 고쳐 재실행 — 아래 표는 정정된 수치다. en/ko(메인
+1699개×2) 구간은 이 버그의 영향을 받지 않았다.
 
 출처: `results/final/category_fp_fn.csv`, `results/final/category_fp_fn.meta.json`
 (`exp/category_fp_fn.py`).
@@ -399,28 +406,34 @@ prompt F1의 n은 1699(PGPrompts en/ko 라벨 보유 전량, Track A는 30/언�
 
 | model | 1위 | 2위 | 3위 |
 |---|---|---|---|
-| llamaguard | S10 Hate (333건) | S2 Non-Violent Crimes (242건) | S1 Violent Crimes (119건) |
-| polyguard | S10 Hate (106건) | S2 Non-Violent Crimes (85건) | S7 Privacy (64건) |
-| sguard | S10 Hate (112건) | S2 Non-Violent Crimes (92건) | S7 Privacy (68건) |
+| llamaguard | S2 Non-Violent Crimes (210건) | S10 Hate (189건) | S1 Violent Crimes (91건) |
+| polyguard | S2 Non-Violent Crimes (65건) | S10 Hate (58건) | S7 Privacy (44건) |
+| sguard | S2 Non-Violent Crimes (88건) | S10 Hate (64건) | S7 Privacy (48건) |
 
-세 모델 다 **S10(Hate)이 FN 1위** — subcategory 기준으로도
-`social_stereotypes_and_unfair_discrimination`(차별/고정관념)이 3모델 전부 FN 1위
-(llamaguard 194건, polyguard 138건, sguard 129건)로 일관됨. `docs/failure_cases.md` §5의
-"완곡한 반문형 혐오 표현을 세 모델 다 놓친다"는 정성 관찰이 정량 집계로도 확인됨.
+정정 전에는 3모델 다 S10(Hate)이 FN 1위였으나, join 버그를 고치자 **S2(Non-Violent Crimes)가
+새로운 1위**로 올라서고 S10은 2위로 밀렸다 — Track A 구간의 S10 FN이 유독 많이 부풀어 있었기
+때문(예: llamaguard S10은 버그 상태에서 333건이었으나 정정 후 189건). subcategory 기준으로는
+`social_stereotypes_and_unfair_discrimination`(차별/고정관념)이 여전히 3모델 다 FN 상위권
+(llamaguard 130건, polyguard 74건, sguard 73건)이지만 llamaguard·sguard는 1위, polyguard는
+`others`(75건)에 이어 2위로 바뀌었다. `docs/failure_cases.md` §5의 "완곡한 반문형 혐오 표현을
+세 모델 다 놓친다"는 정성 관찰 자체는 유효하나, "S10이 정량적으로 최다 미탐 카테고리"라는
+서술은 더 이상 성립하지 않는다.
 
 **오탐(FP) — 과잉 트리거된 카테고리 상위 3개**
 
 | model | 1위 | 2위 | 3위 |
 |---|---|---|---|
-| llamaguard | S8 IP (82건) | S6 Specialized Advice (46건) | S5 Defamation (38건) |
-| polyguard | S8 IP (53건) | S2 Non-Violent Crimes (43건) | S7 Privacy (38건) |
-| sguard | Crime (58건) | Privacy (58건) | Manipulation (50건) |
+| llamaguard | S8 IP (62건) | S6 Specialized Advice (46건) | S5 Defamation (34건) |
+| polyguard | S2 Non-Violent Crimes (35건) | S7 Privacy (34건) | S10 Hate (31건) |
+| sguard | Crime (54건) | Privacy (46건) | Manipulation (42건) |
 
-llamaguard/polyguard는 **S8(지식재산권)이 FP 1위** — `docs/failure_cases.md` §4의 "저작권을
-위반하지 않고" 질문(부정문 프레이밍 무시), `docs/failure_cases_multilingual.md` §F의 "사서
-역할극" 프롬프트(es/ru/hi 공통 S8 FP)가 이 수치의 구체 사례. SGuard는 자체 5카테고리
-taxonomy라 직접 비교는 안 되지만 **Crime·Privacy가 동률 1위**로 과탐지 — `docs/failure_cases.md`
-§4의 "산타/닌자거북이 주소"(Privacy 과탐지) 패턴과 일치.
+llamaguard는 정정 후에도 **S8(지식재산권)이 FP 1위** 그대로 — `docs/failure_cases.md` §4의
+"저작권을 위반하지 않고" 질문(부정문 프레이밍 무시), `docs/failure_cases_multilingual.md` §F의
+"사서 역할극" 프롬프트(es/ru/hi 공통 S8 FP)가 이 수치의 구체 사례. 다만 **polyguard는 S8이
+1위에서 4위(25건)로 밀려나고 S2/S7/S10이 새 top-3**가 됐다 — 이 부분은 정정 전 서술을
+정면으로 뒤집으므로 발표에서 인용하지 말 것. SGuard는 자체 5카테고리 taxonomy라 직접 비교는
+안 되지만 정정 후 **Crime(54건)이 단독 1위**로 나타남 — 정정 전 "Crime·Privacy 동률 1위"였던
+것과 달리 더 이상 동률이 아니다.
 
 전체 카테고리별 원자료(모델×error_type×category, 3중 groupby)는 `results/final/category_fp_fn.csv`
 참고.

@@ -92,8 +92,8 @@ def track_a_fp_fn(model, pgp_df):
     base = pd.read_csv(f"results/multilingual_{model}.csv")
     base = base[base.track == "A"]
     mb = pd.read_csv("data/multilingual_base.csv")
-    mb = mb[mb.source_dataset == "polyguard"][["base_id", "source_id"]]
-    df = base.merge(mb, on="base_id", how="left")
+    mb = mb[mb.source_dataset == "polyguard"][["base_id", "lang", "source_id"]]
+    df = base.merge(mb, on=["base_id", "lang"], how="left")
     df["pred_categories"] = df["raw_output"].apply(lambda r: parse_pred_categories(model, r))
 
     rows = []

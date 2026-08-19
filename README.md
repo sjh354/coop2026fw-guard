@@ -190,8 +190,12 @@ confidence 네이티브 제공) 추가 완료 — 상세 계획은 `docs/PLAN.md
       2~3개 언어에서 동시에 실패하는 사례 다수 확인, ko에서만 관찰됐던 패턴(반문형 차별,
       허구 인물+PII, 실존 공인 전기 질문 FP)이 다국어로 일반화됨을 확인 + 새 패턴 발견
       ("AI 역할극" 프레이밍 스타일이 콘텐츠와 무관하게 FP 유발). (2) 모델×카테고리별 FP/FN —
-      세 모델 다 **S10(Hate)/사회적 고정관념이 FN 1위**, llamaguard·polyguard는 **S8(IP)이 FP
-      1위**, SGuard는 Crime/Privacy 동률 1위(`results_summary.md` D11). (3) flip rate 방향
+      **[2026-08-19 정정]** Track A(es/hi/th/ar/ru) join 버그(`base_id`만으로 join, 언어별
+      5행 중복이 팬아웃돼 해당 구간 카운트가 5배 부풀어 있었음)를 고쳐 재실행: 세 모델 다
+      **S2(Non-Violent Crimes)가 FN 1위**로 바뀌고 S10(Hate)은 2위, llamaguard는 **S8(IP)이
+      FP 1위** 그대로지만 polyguard는 S8이 4위로 밀리고 S2/S7/S10이 top-3, SGuard는
+      Crime이 단독 1위(정정 전 Crime/Privacy 동률이었음)(`results_summary.md` D11,
+      `docs/journal/2026-08-19.md`). (3) flip rate 방향
       분해 — **obfuscation은 압도적으로 우회(bypass) 벡터**(bypass rate가 overblock의
       2.7~15배, SGuard가 가장 비대칭적) — 정성적 결론이 방향 분해 수치로 뒷받침됨(D12).
       (4) confidence threshold sweep — threshold=0.9에서 표본 61~94% 유지하며 F1 전 모델·
